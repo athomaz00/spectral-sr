@@ -4,13 +4,15 @@ Created on Sat Aug 15 12:32:33 2015
 
 @author: Andre
 """
-import seaborn as sns
-sns.set()
+#import seaborn as sns
+#sns.set()
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import scipy.optimize as sp
 from scipy.spatial import distance
+from skimage.feature import peak_local_max
+from PIL import Image
 
 
 plt.close('all')
@@ -26,15 +28,53 @@ def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
                             + c*((y-yo)**2)))
     return g.ravel()
 
-###################################################################################
-    
+################################################################################### 
+imagesFiles = [ '680.tif',  'red.tif', 'green.tif']
 
-imagesFiles = [ '488.tif',  '592.tif', '680.tif', '735.tif']
+image = Image.open('680.tif')
+image = image.transpose(Image.FLIP_TOP_BOTTOM)  # rotate and flip to change
+image = image.transpose(Image.ROTATE_270)  
+image = np.array(image)
+#Mean factor for tresholding (everything less than treshold is zero)
+mean_factor = 1.8
+img_mean_base = np.mean(image)
+
+msk = image<(img_mean_base*mean_factor)
+image[msk] = 0.0
+
+#Check treshold, otherwise it may find more than one peak
+thr_base = np.max(image)-32*np.std(image)
+peaks_base = peak_local_max(image, min_distance=5, threshold_abs=thr_base)
+
+plt.figure()
+plt.imshow(image)
+plt.grid('off')
+plt.scatter(peaks_base[:,1], peaks_base[:,0], facecolor='none', edgecolor="white")
+
+im_red = plt.imread('red.tif')
+im_green = plt.imread('green.tif')
+
+mean_factor = 1.8
+img_mean_base = np.mean(im_red)
+
+msk = im_red<(img_mean_base*mean_factor)
+im_red[msk] = 0.0
+
+mean_factor = 1.8
+img_mean_base = np.mean(im_green)
+
+msk = im_green<(img_mean_base*mean_factor)
+
+im_green[msk] = 0.0
 
 
-initialPoint = np.array([[243, 214], [244, 254], [247,282], [248,296]])
 
-zeroPoint = 680
+plt.figure()
+
+plt.contourf(im_green,60, cmap='Greens')
+plt.contourf(im_red,60, cmap='Reds', alpha=0.5)
+plt.contourf(image,60, cmap='Greys', alpha=0.5)
+plt.grid('off')
 
 
 #############################################
@@ -103,7 +143,7 @@ p = np.poly1d(z)
 xx = np.arange(np.min(distanceCenter)-2, np.max(distanceCenter)+2, 0.5)
 yy = p(xx)
 plt.plot(xx,yy, '--r')
-#plt.show()
+plt.show()
 
 
 
