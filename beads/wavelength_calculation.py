@@ -12,7 +12,6 @@ from mpl_toolkits.mplot3d import Axes3D
 import scipy.optimize as sp
 from skimage.feature import peak_local_max
 from PIL import Image
-from scipy.sparse import csc_matrix, spdiags
 from scipy import sparse
 
 
@@ -30,7 +29,7 @@ def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
     return g.ravel()
 
 ################################################################################### 
-imagesFiles = [ '680.tif',  'red-2.tif', 'green.tif']
+imagesFiles = [ '680.tif',  'red.tif', 'green.tif']
 
 image = Image.open(imagesFiles[0])
 im_red = Image.open(imagesFiles[1])
@@ -50,7 +49,7 @@ for i,points in enumerate(peaks_base):
         delete_base.append(i)
     elif points[1] + 40 >512:
         delete_base.append(i)
-    if 512-points[0]<15:                           #if point is too close to the right
+    if points[0] + 10 > 512:                           #if point is too close to the right
         delete_base.append(i)
     if points[0] - 10 < 0:
         delete_base.append(i)
@@ -150,7 +149,7 @@ for i, peaks in enumerate(peaks_base):
     base_centers = np.append (base_centers, [[inpars[2], inpars[3]]], axis=0)
     base_centers_trans = np.append (base_centers_trans, [[inpars[2]-ymin, inpars[3]-xmin]], axis=0) #parameters minx ymin and xmin to translate 
                                                                                                     #to the coordinate system of the masked image
-     #Plot image
+     #Plot masked image and fitting
 #    fig1 = plt.figure()
 #    ax1 = fig1.add_subplot(111, projection='3d')
 #    ax1.plot_surface(X, Y, imageMask, cmap="hsv", linewidth=0, antialiased=False, alpha=0.5)
@@ -192,9 +191,6 @@ for i,peaks in enumerate(peaks_base):
     
     X, Y = np.mgrid[xmin:xmax+1:, ymin:ymax+1]
     
-    
-
-    
     redMask =  im_red[int(np.min(Y)):int(np.max(Y))+1, int(np.min(X)):int(np.max(X))+1] #to mask it correctly we have to invert X and Y here
     redMaskcopy =  np.copy(im_red)[int(np.min(Y)):int(np.max(Y))+1, int(np.min(X)):int(np.max(X))+1]
     sumRedTemp = np.sum(redMaskcopy, axis=1)
@@ -230,6 +226,7 @@ for i,peaks in enumerate(peaks_base):
     sumGreen[:,i] = sumGreenTemp
 
 #########################################################################################################
+#Function to remove baseline by "Asymmetric Least Squares Smoothing" by P. Eilers and H. Boelens 2005
 def baseline_als(y, lam, p, niter=10):
   L = len(y)
   D = sparse.csc_matrix(np.diff(np.eye(L), 2))
@@ -254,11 +251,14 @@ sumRed[0:30,:] = 0
 sumBase[0:30,:] = 0
 
 
-
+#Tables to hold spectral mean for each channel
 spectralMeanTableRed = np.empty((np.shape(base_centers_trans)[0],1))
 spectralMeanTableGreen = np.empty((np.shape(base_centers_trans)[0],1))
 spectralMeanTableBase = np.empty((np.shape(base_centers_trans)[0],1))
 
+
+#for each center in the translated coordinate system of the masked image calculates the new wavelenght calibration
+#by making the fitted center zero pixel displacement and applying the 3rd polynomial
 for i, centers in enumerate(base_centers_trans):
     pixels = np.arange(0,rows_y,1)
     x_center = centers[1] 
@@ -272,6 +272,7 @@ for i, centers in enumerate(base_centers_trans):
     sumNormGreen = (sumGreen[:,i]) /np.max(sumGreen[:,i]) 
     sumNormBase = (sumBase[:,i])/np.max(sumBase[:,i]) 
     
+    #Spectral mean Calculation (wavelength average weighted by intensity)
     spectralMeanRed = np.sum(np.multiply(sumRed[:,i],pixel_disp))/np.sum(sumRed[:,i])
     
     spectralMeanGreen = np.sum(np.multiply(sumGreen[:,i],pixel_disp))/np.sum(sumGreen[:,i])
@@ -284,9 +285,10 @@ for i, centers in enumerate(base_centers_trans):
     spectralMeanTableBase[i,0] = spectralMeanBase
     
     
-#    plt.figure(1)
-##    plt.scatter([680.0],spectralMeanRed )
-##    plt.scatter([580.0],spectralMeanGreen )
+    plt.figure(4)
+    plt.scatter([680.0],spectralMeanRed )
+    plt.scatter([580.0],spectralMeanGreen )
+    plt.scatter([677.0],spectralMeanBase )
 #    plt.xticks(np.arange(560,720,20))
 #    plt.yticks(np.arange(560,720,20))
 #    plt.xlim(560,720)
@@ -298,13 +300,10 @@ for i, centers in enumerate(base_centers_trans):
 #        corre = sumRed[30:,i]-zz
 #        corre = corre/np.max(corre)
 #        plt.plot(pixel_disp[30:],corre , 'r')
-#        #plt.plot(pixel_disp, smooth(sumNormRed, 3))
-#        #plt.plot(pixel_disp, smooth(sumNormBase, 3), 'b')
-#        #plt.plot(pixel_disp, smooth(sumNormGreen, 3), 'g')
 #        plt.xlim(640,720)
 #        plt.ylim(0,1.2)
 #    
-
+#Plot spectral mean for each color/dye
 plt.figure(3)
 plt.errorbar([580.0], np.mean(spectralMeanTableGreen),yerr=np.std(spectralMeanTableGreen), marker='o', markersize=5)
 plt.errorbar([680.0], np.mean(spectralMeanTableRed), yerr=np.std(spectralMeanTableRed), marker='o', markersize=5)
