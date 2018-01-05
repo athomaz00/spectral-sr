@@ -13,6 +13,7 @@ import scipy.optimize as sp
 from skimage.feature import peak_local_max
 from PIL import Image
 from scipy import sparse
+from scipy.spatial import distance
 
 
 plt.close('all')
@@ -38,8 +39,8 @@ im_green = Image.open(imagesFiles[2])
 image = np.array(image)
 
 #Check treshold, otherwise it may find more than one peak
-thr_base = np.max(image)-32*np.std(image)
-peaks_base = peak_local_max(image, min_distance=5, threshold_abs=thr_base)
+thr_base = np.max(image)-10*np.std(image)
+peaks_base = peak_local_max(image, min_distance=10, threshold_abs=thr_base)
 peaks_base[:,0], peaks_base[:,1] = peaks_base[:,1], peaks_base[:,0].copy()
 
 #if points are to close to the borders dont consider it 
@@ -160,13 +161,30 @@ for i, peaks in enumerate(peaks_base):
      
     #plt.show()
 
+
+
+base_centers_temp = []
+base_centers_trans_temp = []
+
+for i,row in enumerate(base_centers):
+    if i == base_centers.shape[0]-1:
+        break
+    else: 
+        dist_cell = np.linalg.norm(base_centers[i]-base_centers[i+1])
+        if dist_cell>0.01:
+            base_centers_temp.append([row[0], row[1]])
+            base_centers_trans_temp.append([base_centers_trans[i][0], base_centers_trans[i][1]])
+            
+base_centers = np.array([base_centers_temp][0])
+base_centers_trans = np.array([base_centers_trans_temp][0])
+print(str(base_centers.shape[0]) + ' 680 peaks cleaned')
+        
 #Test Peaks fitting    
 plt.figure(2)
 plt.imshow(image)
 plt.grid('off')
 plt.scatter(peaks_base[:,0], peaks_base[:,1], facecolor='none', edgecolor="g")
-plt.scatter(base_centers[:,1], base_centers[:,0], facecolor='none', edgecolor="white")
-    
+plt.scatter(base_centers[:,1], base_centers[:,0], facecolor='none', edgecolor="r")    
     
 #######################################################################################################
 
@@ -295,13 +313,13 @@ for i, centers in enumerate(base_centers_trans):
 #    plt.xlim(560,720)
 #    plt.ylim(560,720)
 ##    
-#    if i in [2,3,4,5]:
-    #plt.figure()
-#        zz = baseline_als(sumRed[30:,i], 1000000, 0.0001)
-#        corre = sumRed[30:,i]-zz
-#        corre = corre/np.max(corre)
-    #plt.plot(pixel_disp,sumNormRed , 'r')
-    #plt.plot(pixel_disp,sumNormGreen , 'g')
+    if i in [1, 10, 20, 30, 40, 50, 60, 70, 80, 90]:
+        plt.figure()
+    #        zz = baseline_als(sumRed[30:,i], 1000000, 0.0001)
+    #        corre = sumRed[30:,i]-zz
+    #        corre = corre/np.max(corre)
+        plt.plot(pixel_disp[30:-1],sumNormRed[30:-1] , 'r')
+        plt.plot(pixel_disp[0:30],sumNormGreen[0:30] , 'g')
 #        plt.xlim(640,720)
 #        plt.ylim(0,1.2)
 #    

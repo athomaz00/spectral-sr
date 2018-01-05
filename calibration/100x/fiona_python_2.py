@@ -32,7 +32,7 @@ def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
 imagesFiles = [ '488.tif',  '592.tif', '680.tif', '735.tif']
 
 
-initialPoint = np.array([[251, 224], [254, 263], [257,295], [259,309]])
+initialPoint = np.array([[177, 262], [177, 308], [180,334], [185,349]])
 
 zeroPoint = 680
 
