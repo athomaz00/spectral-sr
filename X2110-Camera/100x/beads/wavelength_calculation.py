@@ -30,7 +30,7 @@ def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
     return g.ravel()
 
 ################################################################################### 
-imagesFiles = [ '680.tif',  'red.tif', 'green.tif']
+imagesFiles = [ '680-1.tif',  'red-1.tif', 'green-1.tif']
 
 image = Image.open(imagesFiles[0])
 im_red = Image.open(imagesFiles[1])
@@ -39,7 +39,7 @@ im_green = Image.open(imagesFiles[2])
 image = np.array(image)
 
 #Check treshold, otherwise it may find more than one peak
-thr_base = np.max(image)-10*np.std(image)
+thr_base = np.max(image)-15*np.std(image)
 peaks_base = peak_local_max(image, min_distance=10, threshold_abs=thr_base)
 peaks_base[:,0], peaks_base[:,1] = peaks_base[:,1], peaks_base[:,0].copy()
 
@@ -109,18 +109,22 @@ im_green = np.array(im_green)
 #plt.figure(4)
 #plt.imshow(im_green)
 #plt.grid('off')
-#plt.scatter(peaks_green[:,0], peaks_green[:,1], facecolor='none', edgecolor="white")
+#plt.scatter(peaks_base[:,0], peaks_base[:,1], facecolor='none', edgecolor="white")
 
 #############################################
 #Calculation of the centers detected by the peaks of local maxima
+box_all = 20
+y_top = 40
+y_bot = 20
+
 
 base_centers = np.empty((0,2))
 base_centers_trans = np.empty((0,2)) #trans is in the coordinate system of the masked image below
 
 #if a detected color is to far from the reference peak we need to increase the y box height
-box = 20
-box_y_top = 40
-box_y_bot = 20
+box = box_all
+box_y_top = y_top
+box_y_bot = y_bot
 
 rows_y = box_y_top + box_y_bot
 rows_y += 1
@@ -190,9 +194,10 @@ plt.scatter(base_centers[:,1], base_centers[:,0], facecolor='none', edgecolor="r
 
 
 #if a detected color is to far from the reference peak we need to increase the y box height
-box = 20
-box_y_top = 40
-box_y_bot = 20
+box = box_all
+box_y_top = y_top
+box_y_bot = y_bot
+
 
 rows_y = box_y_top + box_y_bot
 rows_y += 1
@@ -207,7 +212,10 @@ for i,peaks in enumerate(peaks_base):
     ymin = peaks[1] - box_y_top
     ymax = peaks[1] + box_y_bot
     
-    X, Y = np.mgrid[xmin:xmax+1:, ymin:ymax+1]
+    x = np.arange(xmin, xmax,1)
+    y = np.arange(ymin, ymax+1,1)
+    
+    X, Y = np.meshgrid(x,y) #note: meshgrid is needed to use an asymetric grid with plot_surface, I tried mgrid and it didn't work
     
     redMask =  im_red[int(np.min(Y)):int(np.max(Y))+1, int(np.min(X)):int(np.max(X))+1] #to mask it correctly we have to invert X and Y here
     redMaskcopy =  np.copy(im_red)[int(np.min(Y)):int(np.max(Y))+1, int(np.min(X)):int(np.max(X))+1]
@@ -215,9 +223,10 @@ for i,peaks in enumerate(peaks_base):
     sumRed[:,i] = sumRedTemp
     
 #######################################################################################################
-box = 20
-box_y_top = 40
-box_y_bot = 20
+box = box_all
+box_y_top = y_top
+box_y_bot = y_bot
+
 
 rows_y = box_y_top + box_y_bot
 rows_y += 1
@@ -232,16 +241,20 @@ for i,peaks in enumerate(peaks_base):
     ymin = peaks[1] - box_y_top
     ymax = peaks[1] + box_y_bot
     
+    x = np.arange(xmin, xmax,1)
+    y = np.arange(ymin, ymax+1,1)
     
-    X, Y = np.mgrid[xmin:xmax+1:, ymin:ymax+1]
+    X, Y = np.meshgrid(x,y) #note: meshgrid is needed to use an asymetric grid with plot_surface, I tried mgrid and it didn't work
     
 
     
     greenMask = im_green[int(np.min(Y)):int(np.max(Y))+1, int(np.min(X)):int(np.max(X))+1] #to mask it correctly we have to invert X and Y here
-    
+  
     greenMaskcopy =  np.copy(im_green)[int(np.min(Y)):int(np.max(Y))+1, int(np.min(X)):int(np.max(X))+1]
     sumGreenTemp = np.sum(greenMaskcopy, axis=1)
+
     sumGreen[:,i] = sumGreenTemp
+
 
 #########################################################################################################
 #Function to remove baseline by "Asymmetric Least Squares Smoothing" by P. Eilers and H. Boelens 2005
@@ -259,7 +272,10 @@ def baseline_als(y, lam, p, niter=10):
 
 #Wavelength Calculation
 #coef comes from the calibration => coefficient of a 3rd order polynomial    
-coef = np.array([-4.48739898e-06,   1.68134622e-02,   3.86969998e+00,
+coef = np.array([1.89E-04
+,   4.26E-02
+,   5.06E+00
+,
        6.80000000e+02])
 
 p = np.poly1d(coef)
@@ -314,13 +330,14 @@ for i, centers in enumerate(base_centers_trans):
 #    plt.xlim(560,720)
 #    plt.ylim(560,720)
 ##    
-    if i in [1, 10, 20, 30, 40, 50, 60, 70, 80, 90]:
-        plt.figure()
-    #        zz = baseline_als(sumRed[30:,i], 1000000, 0.0001)
-    #        corre = sumRed[30:,i]-zz
-    #        corre = corre/np.max(corre)
-        plt.plot(pixel_disp[30:-1],sumNormRed[30:-1] , 'r')
-        plt.plot(pixel_disp[0:30],sumNormGreen[0:30] , 'g')
+    #if i in [1, 10, 20, 30, 40, 50, 60, 70, 80, 90]:
+    plt.figure(5)
+#        zz = baseline_als(sumRed[30:,i], 1000000, 0.0001)
+#        corre = sumRed[30:,i]-zz
+#        corre = corre/np.max(corre)
+    plt.plot(pixel_disp[30:-1],sumNormRed[30:-1])
+    plt.figure(6)
+    plt.plot(pixel_disp[0:30],sumNormGreen[0:30])
 #        plt.xlim(640,720)
 #        plt.ylim(0,1.2)
 #    
