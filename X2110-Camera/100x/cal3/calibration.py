@@ -15,6 +15,15 @@ from scipy.spatial import distance
 
 plt.close('all')
 #####################################################################################
+#2D Gaussian asymetric and rotated
+#offset = background
+#amplitude = Peak Intensity
+#x0 = x point
+#y0 = y point
+#sigma_x = width in x direction
+#sigma_y = width in y direction
+#theta = rotation angle
+
 def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
     x, y = x_y
     xo = float(xo)
@@ -27,14 +36,16 @@ def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
     return g.ravel()
 
 ###################################################################################
-    
+# =============================================================================
+# Images files to load and initial points to do the calibration    
+# =============================================================================
 
-imagesFiles = [ '488.tif',  '592.tif', '680.tif', '735.tif']
+imagesFiles = [ '488.tif',  '568.tif', '680.tif', '735.tif']
 
 
-initialPoint = np.array([[177, 262], [177, 308], [180,334], [185,349]])
+initialPoint = np.array([[250, 306], [251, 338], [252,364], [253,373]])
 
-zeroPoint = 680
+zeroPoint = 680 #point for 0 pixel displacement
 
 
 #############################################
@@ -45,15 +56,24 @@ for i,items in enumerate(imagesFiles):
     
     image = plt.imread(items) #read image file
     
-    squareSize = 16
+    squareSize = 20
     
-    X, Y = np.mgrid[initialPoint[i][0]-squareSize/2:initialPoint[i][0]+squareSize/2 +1,initialPoint[i][1]-squareSize/2:initialPoint[i][1]+squareSize/2 +1]
+    xmin = initialPoint[i][0]-squareSize/2
+    xmax = initialPoint[i][0]+squareSize/2
+    ymin = initialPoint[i][1]-squareSize/2
+    ymax = initialPoint[i][1]+squareSize/2
+    
+    x = np.arange(xmin, xmax,1)
+    y = np.arange(ymin, ymax,1)
+    
+    X, Y = np.meshgrid(x,y) #note: meshgrid is needed to use an asymetric grid with plot_surface, I tried mgrid and it didn't work.
+    
     
     imageMask =  image[int(np.min(Y)):int(np.max(Y))+1, int(np.min(X)):int(np.max(X))+1] #to mask it correctly we have to invert X and Y here
     
-    ig = (np.min(image), np.max(image) , initialPoint[i][0], initialPoint[i][1], 2.0, 2.0, 0.0)
-    inpars, pcov = sp.curve_fit(twoD_Gaussian,(X,Y), imageMask.ravel(), p0=ig, maxfev=20000)
-    fit3 = twoD_Gaussian((X, Y), *inpars).reshape(len(X),len(Y))
+    ig = (np.min(image), np.max(image) , initialPoint[i][1], initialPoint[i][0], 2.0, 2.0, 0.0)
+    inpars, pcov = sp.curve_fit(twoD_Gaussian,(Y,X), imageMask.ravel(), p0=ig, maxfev=20000)
+    fit3 = twoD_Gaussian((Y, X), *inpars).reshape(X.shape[0], Y.shape[1])
     
     
     #Plot image
@@ -69,13 +89,14 @@ for i,items in enumerate(imagesFiles):
     
        
     # Getting center and standard deviation in x and y
-    xCenter = inpars[2]       # Center of x in nanometer
-    yCenter = inpars[3]       # Center of y in nanometer
+    xCenter = inpars[3]       # Center of x in nanometer
+    yCenter = inpars[2]       # Center of y in nanometer
     print('==========================')
     print(items)
     print('X pos: ' + str(xCenter))
     print('Y pos: ' + str(yCenter))
     print('===========================')
+    
     
     splitName = items.split('.tif')
     centerPos.append([int(splitName[0]), xCenter, yCenter])
@@ -99,6 +120,7 @@ plt.title('Pixel Displacement by Wavelength')
 
 z = np.polyfit(distanceCenter, centerPos[:,0], 3)
 p = np.poly1d(z)
+print(p)
 
 xx = np.arange(np.min(distanceCenter)-2, np.max(distanceCenter)+2, 0.5)
 yy = p(xx)
