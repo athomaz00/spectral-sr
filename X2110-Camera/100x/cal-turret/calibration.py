@@ -43,7 +43,7 @@ def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
 imagesFiles = [ '488.tif',  '568.tif', '680.tif', '735.tif']
 
 
-initialPoint = np.array([[250, 306], [251, 338], [252,364], [253,373]])
+initialPoint = np.array([[243, 325], [243, 355], [243,384], [243,390]])
 
 zeroPoint = 680 #point for 0 pixel displacement
 
@@ -56,7 +56,7 @@ for i,items in enumerate(imagesFiles):
     
     image = plt.imread(items) #read image file
     
-    squareSize = 20
+    squareSize = 16
     
     xmin = initialPoint[i][0]-squareSize/2
     xmax = initialPoint[i][0]+squareSize/2
@@ -111,7 +111,7 @@ distanceCenter = distancesAll[pixelRef_ind, :]
 
 distanceCenter[0:pixelRef_ind] = distanceCenter[0:pixelRef_ind]*-1
 
-plt.figure() 
+plt.figure(5) 
 plt.plot(distanceCenter, centerPos[:,0], 'o')
 plt.xlabel('Pixel Displacement')
 plt.ylabel('Wavelength (nm)')

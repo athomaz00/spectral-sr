@@ -30,7 +30,7 @@ def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
     return g.ravel()
 
 ################################################################################### 
-imagesFiles = [ '680-1.tif',  'red-1.tif', 'green-1.tif']
+imagesFiles = [ '680.tif',  'red.tif', 'green.tif']
 
 image = Image.open(imagesFiles[0])
 im_red = Image.open(imagesFiles[1])
@@ -39,7 +39,7 @@ im_green = Image.open(imagesFiles[2])
 image = np.array(image)
 
 #Check treshold, otherwise it may find more than one peak
-thr_base = np.max(image)-15*np.std(image)
+thr_base = np.max(image)-25*np.std(image)
 peaks_base = peak_local_max(image, min_distance=10, threshold_abs=thr_base)
 peaks_base[:,0], peaks_base[:,1] = peaks_base[:,1], peaks_base[:,0].copy()
 
@@ -274,9 +274,9 @@ def baseline_als(y, lam, p, niter=10):
 #coef comes from the calibration => coefficient of a 3rd order polynomial    
 coef = np.array([1.89E-04
 ,   4.26E-02
-,   5.06E+00
+,   5.57
 ,
-       6.80000000e+02])
+      680])
 
 p = np.poly1d(coef)
 
@@ -349,7 +349,7 @@ plt.errorbar([680.0], np.mean(spectralMeanTableBase), yerr=np.std(spectralMeanTa
 plt.xticks(np.arange(560,750,20))
 plt.yticks(np.arange(560,750,20))
 plt.xlim(570,700)
-plt.ylim(580,720)
+plt.ylim(550,720)
 plt.grid('on')
 plt.xlabel('Nominal Wavelength (nm)')
 plt.ylabel('Spectral Mean (nm)')
