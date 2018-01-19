@@ -16,6 +16,7 @@ from scipy import sparse
 from scipy.spatial import distance
 
 
+
 plt.close('all')
 #####################################################################################
 def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
@@ -32,25 +33,33 @@ def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
 ################################################################################### 
 imagesFiles = [ '680.tif',  'red.tif', 'green.tif']
 
+
+
 image = Image.open(imagesFiles[0])
 im_red = Image.open(imagesFiles[1])
 im_green = Image.open(imagesFiles[2])
 
+
+
 image = np.array(image)
 
 #Check treshold, otherwise it may find more than one peak
-thr_base = np.max(image)-25*np.std(image)
-peaks_base = peak_local_max(image, min_distance=10, threshold_abs=thr_base)
+thr_base = np.max(image)-40*np.std(image)
+peaks_base = peak_local_max(image, min_distance=5, threshold_abs=thr_base)
 peaks_base[:,0], peaks_base[:,1] = peaks_base[:,1], peaks_base[:,0].copy()
 
 #if points are to close to the borders dont consider it 
+box_all = 18
+y_top = 50
+y_bot = 20
+
 delete_base = []
 for i,points in enumerate(peaks_base):
-    if points[1]-40<0:                             #if point is too close to the top
+    if points[1]-y_top<0:                             #if point is too close to the top
         delete_base.append(i)
-    elif points[1] + 40 >512:
+    elif points[1] + y_bot >image.shape[0]:
         delete_base.append(i)
-    if points[0] + 10 > 512:                           #if point is too close to the right
+    if points[0] + 10 > image.shape[1]:                           #if point is too close to the right
         delete_base.append(i)
     if points[0] - 10 < 0:
         delete_base.append(i)
@@ -113,9 +122,7 @@ im_green = np.array(im_green)
 
 #############################################
 #Calculation of the centers detected by the peaks of local maxima
-box_all = 20
-y_top = 40
-y_bot = 20
+
 
 
 base_centers = np.empty((0,2))
@@ -127,7 +134,7 @@ box_y_top = y_top
 box_y_bot = y_bot
 
 rows_y = box_y_top + box_y_bot
-rows_y += 1
+#rows_y += 1
 sumBase = np.empty((rows_y, peaks_base.shape[0])) #empty matrix to hold the collapsed sum of images/spectra
 
 for i, peaks in enumerate(peaks_base):
@@ -138,57 +145,62 @@ for i, peaks in enumerate(peaks_base):
     ymax = peaks[1] + box_y_bot
     
     x = np.arange(xmin, xmax,1)
-    y = np.arange(ymin, ymax+1,1)
+    y = np.arange(ymin, ymax,1)
     
-    X, Y = np.meshgrid(x,y) #note: meshgrid is needed to use an asymetric grid with plot_surface, I tried mgrid and it didn't work.
+    Y, X = np.meshgrid(x,y) #note: meshgrid is needed to use an asymetric grid with plot_surface, I tried mgrid and it didn't work.
     
-    imageMask =  image[int(np.min(y)):int(np.max(y))+1, int(np.min(x)):int(np.max(x))+1] #to mask it correctly we have to invert X and Y here
-    imageMaskcopy =  np.copy(image)[int(np.min(y)):int(np.max(y))+1, int(np.min(x)):int(np.max(x))+1] #copy to do calculation in masked image coordinates
+    imageMask =  image[int(np.min(X)):int(np.max(X))+1, int(np.min(Y)):int(np.max(Y))+1] #to mask it correctly we have to invert X and Y here
+    imageMaskcopy =  np.copy(image)[int(np.min(X)):int(np.max(X))+1, int(np.min(Y)):int(np.max(Y))+1] #copy to do calculation in masked image coordinates
+    
+    
+    
     sumBaseTemp = np.sum(imageMaskcopy, axis=1) #collapse the x direction to get spectra along y direction
     sumBase[:,i] = sumBaseTemp
   
     ig = (np.min(imageMask), np.max(imageMask) , peaks[1]+0.5, peaks[0]+0.5, 2.0, 2.0, 0.0) #0.5 used to force fit because peaks were to close to the fit
-    inpars, pcov = sp.curve_fit(twoD_Gaussian,(Y,X), imageMask.ravel(), p0=ig, maxfev=20000)
+    inpars, pcov = sp.curve_fit(twoD_Gaussian,(X,Y), imageMask.ravel(), p0=ig, maxfev=20000)
     fit3 = twoD_Gaussian((Y, X), *inpars).reshape(X.shape[0], Y.shape[1])
     
     base_centers = np.append (base_centers, [[inpars[2], inpars[3]]], axis=0)
     base_centers_trans = np.append (base_centers_trans, [[inpars[2]-ymin, inpars[3]-xmin]], axis=0) #parameters minx ymin and xmin to translate 
                                                                                                     #to the coordinate system of the masked image
      #Plot masked image and fitting
-#    fig1 = plt.figure()
-#    ax1 = fig1.add_subplot(111, projection='3d')
-#    ax1.plot_surface(X, Y, imageMask, cmap="hsv", linewidth=0, antialiased=False, alpha=0.5)
+    #fig = plt.figure(i+10)
+    #ax1 = fig.gca(projection='3d')
+    #ax1.plot_surface(Y, X, imageMask, cmap="hsv", linewidth=0, antialiased=False, alpha=0.8)
 #    ax1.plot_wireframe(X, Y, fit3, color="black", linewidth=3, alpha=0.3)
 #    ax1.set_xlabel("Pixels")
 #    ax1.set_ylabel("Pixels")
 #    ax1.set_zlabel("Intensity")
-     
-    #plt.show()
+#     
+#    plt.show()
 
 
 
 base_centers_temp = []
 base_centers_trans_temp = []
 
-for i,row in enumerate(base_centers):
-    if i == base_centers.shape[0]-1:
-        break
-    else: 
-        dist_cell = np.linalg.norm(base_centers[i]-base_centers[i+1])
-        if dist_cell>0.01:
-            base_centers_temp.append([row[0], row[1]])
-            base_centers_trans_temp.append([base_centers_trans[i][0], base_centers_trans[i][1]])
+#for i,row in enumerate(base_centers):
+#    if i == base_centers.shape[0]:
+#        break
+#    else: 
+#        dist_cell = np.linalg.norm(base_centers[i]-base_centers[i+1])
+#        if dist_cell>0.01:
+#            base_centers_temp.append([row[0], row[1]])
+#            base_centers_trans_temp.append([base_centers_trans[i][0], base_centers_trans[i][1]])
             
-base_centers = np.array([base_centers_temp][0])
-base_centers_trans = np.array([base_centers_trans_temp][0])
-print(str(base_centers.shape[0]) + ' 680 peaks cleaned')
-        
+##base_centers = np.array([base_centers_temp][0])
+base_centers[:, 0], base_centers[:, 1] = base_centers[:, 1], base_centers[:, 0].copy() #invert back to X,Y order
+##base_centers_trans = np.array([base_centers_trans_temp][0])
+base_centers_trans[:, 0], base_centers_trans[:, 1] = base_centers_trans[:, 1], base_centers_trans[:, 0].copy() #invert back to X,Y order
+#print(str(base_centers.shape[0]) + ' 680 peaks cleaned')
+#        
 #Test Peaks fitting    
 plt.figure(2)
 plt.imshow(image)
 plt.grid('off')
 plt.scatter(peaks_base[:,0], peaks_base[:,1], facecolor='none', edgecolor="g")
-plt.scatter(base_centers[:,1], base_centers[:,0], facecolor='none', edgecolor="r")    
+plt.scatter(base_centers[:,0], base_centers[:,1], facecolor='none', edgecolor="r")    
     
 #######################################################################################################
 
@@ -200,10 +212,10 @@ box_y_bot = y_bot
 
 
 rows_y = box_y_top + box_y_bot
-rows_y += 1
+#rows_y += 1
 
 
-sumRed = np.empty((rows_y, peaks_base.shape[0]))
+sumRed = np.empty((rows_y, base_centers.shape[0]))
 
 for i,peaks in enumerate(peaks_base):
     
@@ -213,14 +225,23 @@ for i,peaks in enumerate(peaks_base):
     ymax = peaks[1] + box_y_bot
     
     x = np.arange(xmin, xmax,1)
-    y = np.arange(ymin, ymax+1,1)
+    y = np.arange(ymin, ymax,1)
     
-    X, Y = np.meshgrid(x,y) #note: meshgrid is needed to use an asymetric grid with plot_surface, I tried mgrid and it didn't work
+    Y, X = np.meshgrid(x,y) #note: meshgrid is needed to use an asymetric grid with plot_surface, I tried mgrid and it didn't work
     
-    redMask =  im_red[int(np.min(Y)):int(np.max(Y))+1, int(np.min(X)):int(np.max(X))+1] #to mask it correctly we have to invert X and Y here
-    redMaskcopy =  np.copy(im_red)[int(np.min(Y)):int(np.max(Y))+1, int(np.min(X)):int(np.max(X))+1]
+    redMask =  im_red[int(np.min(X)):int(np.max(X))+1, int(np.min(Y)):int(np.max(Y))+1] #to mask it correctly we have to invert X and Y here
+    redMaskcopy =  np.copy(im_red)[int(np.min(X)):int(np.max(X))+1, int(np.min(Y)):int(np.max(Y))+1]
+
     sumRedTemp = np.sum(redMaskcopy, axis=1)
     sumRed[:,i] = sumRedTemp
+    
+    #fig = plt.figure(i+10)
+    #ax1 = fig.gca(projection='3d')
+    #ax1.plot_surface(X, Y, redMask, cmap="jet", linewidth=0, antialiased=False, alpha=0.5)
+    #ax1.plot_wireframe(X, Y, fit3, color="black", linewidth=3, alpha=0.3)
+    #ax1.set_xlabel("Pixels")
+    #ax1.set_ylabel("Pixels")
+    #ax1.set_zlabel("Intensity")
     
 #######################################################################################################
 box = box_all
@@ -229,12 +250,12 @@ box_y_bot = y_bot
 
 
 rows_y = box_y_top + box_y_bot
-rows_y += 1
+#rows_y += 1
 
 
-sumGreen = np.empty((rows_y, peaks_base.shape[0]))
+sumGreen = np.empty((rows_y, base_centers.shape[0]))
 
-for i,peaks in enumerate(peaks_base):
+for i,peaks in enumerate(base_centers):
     
     xmin = peaks[0] - box/2
     xmax = peaks[0] + box/2
@@ -242,18 +263,22 @@ for i,peaks in enumerate(peaks_base):
     ymax = peaks[1] + box_y_bot
     
     x = np.arange(xmin, xmax,1)
-    y = np.arange(ymin, ymax+1,1)
+    y = np.arange(ymin, ymax,1)
     
-    X, Y = np.meshgrid(x,y) #note: meshgrid is needed to use an asymetric grid with plot_surface, I tried mgrid and it didn't work
+    Y, X = np.meshgrid(x,y) #note: meshgrid is needed to use an asymetric grid with plot_surface, I tried mgrid and it didn't work
     
 
     
-    greenMask = im_green[int(np.min(Y)):int(np.max(Y))+1, int(np.min(X)):int(np.max(X))+1] #to mask it correctly we have to invert X and Y here
+    greenMask = im_green[int(np.min(X)):int(np.max(X))+1, int(np.min(Y)):int(np.max(Y))+1] #to mask it correctly we have to invert X and Y here
   
-    greenMaskcopy =  np.copy(im_green)[int(np.min(Y)):int(np.max(Y))+1, int(np.min(X)):int(np.max(X))+1]
+    greenMaskcopy =  np.copy(im_green)[int(np.min(X)):int(np.max(X))+1, int(np.min(Y)):int(np.max(Y))+1]
     sumGreenTemp = np.sum(greenMaskcopy, axis=1)
 
     sumGreen[:,i] = sumGreenTemp
+    
+#    fig = plt.figure(i+10)
+#    ax1 = fig.gca(projection='3d')
+#    ax1.plot_surface(X, Y, greenMask, cmap="jet", linewidth=0, antialiased=False, alpha=0.5)
 
 
 #########################################################################################################
@@ -272,19 +297,15 @@ def baseline_als(y, lam, p, niter=10):
 
 #Wavelength Calculation
 #coef comes from the calibration => coefficient of a 3rd order polynomial    
-coef = np.array([1.89E-04
-,   4.26E-02
-,   5.57
-,
-      680])
+coef = np.array([-2.702e-05, 0.01925, 4.312, 680])
 
 p = np.poly1d(coef)
 
 #In this case there is some leaking between the channels and also because the mask box is big a lot of the 
 #masked image is background, setting this intervals to 0 takes care of this
-sumGreen[30:-1,:] = 0
-sumRed[0:30,:] = 0
-sumBase[0:30,:] = 0
+sumGreen[35:,:] = 0
+sumRed[0:35,:] = 0
+sumBase[0:35,:] = 0
 
 
 #Tables to hold spectral mean for each channel
@@ -297,8 +318,8 @@ spectralMeanTableBase = np.empty((np.shape(base_centers_trans)[0],1))
 #by making the fitted center zero pixel displacement and applying the 3rd polynomial
 for i, centers in enumerate(base_centers_trans):
     pixels = np.arange(0,rows_y,1)
-    x_center = centers[1] 
-    y_center = centers[0]
+    x_center = centers[0]
+    y_center = centers[1]
     pixels_x = pixels - x_center
     pixels_y = pixels - y_center
     pixel_disp = p(pixels_y)
@@ -325,19 +346,25 @@ for i, centers in enumerate(base_centers_trans):
     plt.scatter([680.0],spectralMeanRed )
     plt.scatter([580.0],spectralMeanGreen )
     plt.scatter([677.0],spectralMeanBase )
-#    plt.xticks(np.arange(560,720,20))
+##    plt.xticks(np.arange(560,720,20))
 #    plt.yticks(np.arange(560,720,20))
 #    plt.xlim(560,720)
 #    plt.ylim(560,720)
 ##    
-    #if i in [1, 10, 20, 30, 40, 50, 60, 70, 80, 90]:
-    plt.figure(5)
-#        zz = baseline_als(sumRed[30:,i], 1000000, 0.0001)
-#        corre = sumRed[30:,i]-zz
-#        corre = corre/np.max(corre)
-    plt.plot(pixel_disp[30:-1],sumNormRed[30:-1])
+    #if i in [5]:
+    #if i not in [0, 2, 12]:
     plt.figure(6)
-    plt.plot(pixel_disp[0:30],sumNormGreen[0:30])
+    ##        zz = baseline_als(sumRed[30:,i], 1000000, 0.0001)
+    ##        corre = sumRed[30:,i]-zz
+    ##        corre = corre/np.max(corre)
+    plt.plot(pixel_disp[35:],sumNormRed[35:], label=i)
+    #plt.plot(pixel_disp,sumNormBase, label=i)
+    #    #plt.legend()
+    # 
+    #
+    plt.plot(pixel_disp[0:40],sumNormGreen[0:40], label=i)
+#        plt.legend()
+    plt.xlim(500,800)
 #        plt.xlim(640,720)
 #        plt.ylim(0,1.2)
 #    
@@ -349,7 +376,7 @@ plt.errorbar([680.0], np.mean(spectralMeanTableBase), yerr=np.std(spectralMeanTa
 plt.xticks(np.arange(560,750,20))
 plt.yticks(np.arange(560,750,20))
 plt.xlim(570,700)
-plt.ylim(550,720)
+plt.ylim(500,720)
 plt.grid('on')
 plt.xlabel('Nominal Wavelength (nm)')
 plt.ylabel('Spectral Mean (nm)')
