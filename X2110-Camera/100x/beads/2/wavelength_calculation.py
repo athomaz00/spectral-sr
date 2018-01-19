@@ -30,7 +30,7 @@ def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
     return g.ravel()
 
 ################################################################################### 
-imagesFiles = [ '680-2.tif',  'red-2.tif', 'green-2.tif']
+imagesFiles = [ '680-1.tif',  'red-1.tif', 'green-1.tif']
 
 image = Image.open(imagesFiles[0])
 im_red = Image.open(imagesFiles[1])
@@ -39,7 +39,7 @@ im_green = Image.open(imagesFiles[2])
 image = np.array(image)
 
 #Check treshold, otherwise it may find more than one peak
-thr_base = np.max(image)-8*np.std(image)
+thr_base = np.max(image)-33*np.std(image)
 peaks_base = peak_local_max(image, min_distance=5, threshold_abs=thr_base)
 peaks_base[:,0], peaks_base[:,1] = peaks_base[:,1], peaks_base[:,0].copy()
 
@@ -48,9 +48,9 @@ delete_base = []
 for i,points in enumerate(peaks_base):
     if points[1]-40<0:                             #if point is too close to the top
         delete_base.append(i)
-    elif points[1] + 40 >512:
+    elif points[1] + 40 >image.shape[0]:
         delete_base.append(i)
-    if points[0] + 10 > 512:                           #if point is too close to the right
+    if points[0] + 10 > image.shape[1]:                           #if point is too close to the right
         delete_base.append(i)
     if points[0] - 10 < 0:
         delete_base.append(i)
@@ -274,11 +274,7 @@ def baseline_als(y, lam, p, niter=10):
 
 #Wavelength Calculation
 #coef comes from the calibration => coefficient of a 3rd order polynomial    
-coef = np.array([1.89E-04
-,   4.26E-02
-,   5.57
-,
-      680])
+coef = np.array([1.89e-04,   4.26e-02,   5.57,      680])
 
 p = np.poly1d(coef)
 
@@ -299,8 +295,8 @@ spectralMeanTableBase = np.empty((np.shape(base_centers_trans)[0],1))
 #by making the fitted center zero pixel displacement and applying the 3rd polynomial
 for i, centers in enumerate(base_centers_trans):
     pixels = np.arange(0,rows_y,1)
-    x_center = np.rint(centers[0] )
-    y_center = np.rint(centers[1])
+    x_center = centers[0]
+    y_center = centers[1]
     pixels_x = pixels - x_center
     pixels_y = pixels - y_center
     pixel_disp = p(pixels_y)
