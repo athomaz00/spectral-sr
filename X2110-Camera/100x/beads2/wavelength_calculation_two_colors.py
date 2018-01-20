@@ -17,7 +17,8 @@ from scipy.spatial import distance
 
 
 
-plt.close('all')
+#plt.close('all')
+#comment
 #####################################################################################
 def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
     x, y = x_y
