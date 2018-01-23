@@ -17,8 +17,8 @@ from scipy.spatial import distance
 
 
 
-#plt.close('all')
-#comment
+plt.close('all')
+
 #####################################################################################
 def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
     x, y = x_y
@@ -45,7 +45,7 @@ im_green = Image.open(imagesFiles[2])
 image = np.array(image)
 
 #Check treshold, otherwise it may find more than one peak
-thr_base = np.max(image)-40*np.std(image)
+thr_base = np.max(image)-50*np.std(image)
 peaks_base = peak_local_max(image, min_distance=5, threshold_abs=thr_base)
 peaks_base[:,0], peaks_base[:,1] = peaks_base[:,1], peaks_base[:,0].copy()
 
@@ -298,15 +298,16 @@ def baseline_als(y, lam, p, niter=10):
 
 #Wavelength Calculation
 #coef comes from the calibration => coefficient of a 3rd order polynomial    
-coef = np.array([-2.702e-05, 0.01925, 4.312, 680])
+coef = np.array([1.567e-05,  0.01667, 3.653, 680])
 
 p = np.poly1d(coef)
 
 #In this case there is some leaking between the channels and also because the mask box is big a lot of the 
 #masked image is background, setting this intervals to 0 takes care of this
-sumGreen[35:,:] = 0
-sumRed[0:35,:] = 0
-sumBase[0:35,:] = 0
+sumGreen[40:,:] = 0
+#sumGreen[35:,:] = 0
+sumRed[0:40,:] = 0
+sumBase[0:40,:] = 0
 
 
 #Tables to hold spectral mean for each channel
@@ -346,26 +347,26 @@ for i, centers in enumerate(base_centers_trans):
     plt.figure(4)
     plt.scatter([680.0],spectralMeanRed )
     plt.scatter([580.0],spectralMeanGreen )
-    plt.scatter([677.0],spectralMeanBase )
+    #plt.scatter([677.0],spectralMeanBase )
 ##    plt.xticks(np.arange(560,720,20))
 #    plt.yticks(np.arange(560,720,20))
 #    plt.xlim(560,720)
 #    plt.ylim(560,720)
 ##    
     #if i in [5]:
-    #if i not in [0, 2, 12]:
-    plt.figure(6)
-    ##        zz = baseline_als(sumRed[30:,i], 1000000, 0.0001)
-    ##        corre = sumRed[30:,i]-zz
-    ##        corre = corre/np.max(corre)
-    plt.plot(pixel_disp[35:],sumNormRed[35:], label=i)
-    #plt.plot(pixel_disp,sumNormBase, label=i)
-    #    #plt.legend()
-    # 
-    #
-    plt.plot(pixel_disp[0:40],sumNormGreen[0:40], label=i)
-#        plt.legend()
-    plt.xlim(500,800)
+    if i not in [ 8]:
+        plt.figure(6)
+        ##        zz = baseline_als(sumRed[30:,i], 1000000, 0.0001)
+        ##        corre = sumRed[30:,i]-zz
+        ##        corre = corre/np.max(corre)
+        plt.plot(pixel_disp[40:],sumNormRed[40:], label=i)
+        #plt.plot(pixel_disp,sumNormBase, label=i)
+        #    #plt.legend()
+        # 
+        #
+        plt.plot(pixel_disp[0:40],sumNormGreen[0:40], label=i)
+        #plt.legend()
+        plt.xlim(500,800)
 #        plt.xlim(640,720)
 #        plt.ylim(0,1.2)
 #    
@@ -373,11 +374,11 @@ for i, centers in enumerate(base_centers_trans):
 plt.figure(3)
 plt.errorbar([580.0], np.mean(spectralMeanTableGreen),yerr=np.std(spectralMeanTableGreen), marker='o', markersize=5)
 plt.errorbar([680.0], np.mean(spectralMeanTableRed), yerr=np.std(spectralMeanTableRed), marker='o', markersize=5)
-plt.errorbar([680.0], np.mean(spectralMeanTableBase), yerr=np.std(spectralMeanTableBase), marker='o', markersize=5)
+#plt.errorbar([680.0], np.mean(spectralMeanTableBase), yerr=np.std(spectralMeanTableBase), marker='o', markersize=5)
 plt.xticks(np.arange(560,750,20))
 plt.yticks(np.arange(560,750,20))
 plt.xlim(570,700)
-plt.ylim(500,720)
+plt.ylim(560,720)
 plt.grid('on')
 plt.xlabel('Nominal Wavelength (nm)')
 plt.ylabel('Spectral Mean (nm)')

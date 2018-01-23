@@ -4,8 +4,8 @@ Created on Sat Aug 15 12:32:33 2015
 
 @author: Andre
 """
-import seaborn as sns
-sns.set()
+#import seaborn as sns
+#sns.set()
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
@@ -43,7 +43,7 @@ def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
 imagesFiles = [ '488.tif',  '568.tif', '680.tif', '735.tif']
 
 
-initialPoint = np.array([[348, 240], [348, 275], [348,307], [348,318]])
+initialPoint = np.array([[229, 229], [229, 271], [229,307], [230,323]])
 
 zeroPoint = 680 #point for 0 pixel displacement
 
