@@ -1,9 +1,12 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sat Aug 15 12:32:33 2015
+# =============================================================================
+# This code calculates the wavelength based on the calibration of the prism. 
+# Input: image files with the different colors on imageFiles variable
+# Output: graphs of the spectra by wavelength
+# coef variable is the 3rd polynomial coefcients from the prism calibration
+# Code written by Andre Thomaz 1/22/2018
+# =============================================================================
 
-@author: Andre
-"""
+
 #import seaborn as sns
 #sns.set()
 import matplotlib.pyplot as plt
@@ -13,7 +16,8 @@ import scipy.optimize as sp
 from skimage.feature import peak_local_max
 from PIL import Image
 from scipy import sparse
-from scipy.spatial import distance
+#from scipy.spatial import distance
+import pandas as pd
 
 
 
@@ -32,6 +36,8 @@ def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
     return g.ravel()
 
 ################################################################################### 
+    
+
 imagesFiles = [ '680.tif',  'red.tif', 'green.tif']
 
 
@@ -49,20 +55,22 @@ thr_base = np.max(image)-50*np.std(image)
 peaks_base = peak_local_max(image, min_distance=5, threshold_abs=thr_base)
 peaks_base[:,0], peaks_base[:,1] = peaks_base[:,1], peaks_base[:,0].copy()
 
-#if points are to close to the borders dont consider it 
-box_all = 18
-y_top = 50
+#Define the size of the box/rectangle to crop the image to find peaks
+x_sides = 18
+y_top = 50 #if one of the colors is too far away from 680nm rectangle
 y_bot = 20
 
+
+#if points are to close to the borders dont consider it 
 delete_base = []
 for i,points in enumerate(peaks_base):
     if points[1]-y_top<0:                             #if point is too close to the top
         delete_base.append(i)
-    elif points[1] + y_bot >image.shape[0]:
+    elif points[1] + y_bot >image.shape[0]:           #if point is too close to the bottom
         delete_base.append(i)
-    if points[0] + 10 > image.shape[1]:                           #if point is too close to the right
+    if points[0] + 10 > image.shape[1]:               #if point is too close to the right
         delete_base.append(i)
-    if points[0] - 10 < 0:
+    if points[0] - 10 < 0:                            #if point is too close to the left
         delete_base.append(i)
 peaks_base = np.delete(peaks_base, delete_base, 0)
 print(str(peaks_base.shape[0]) + ' 680 peaks')
@@ -122,21 +130,23 @@ im_green = np.array(im_green)
 #plt.scatter(peaks_base[:,0], peaks_base[:,1], facecolor='none', edgecolor="white")
 
 #############################################
+
 #Calculation of the centers detected by the peaks of local maxima
-
-
 
 base_centers = np.empty((0,2))
 base_centers_trans = np.empty((0,2)) #trans is in the coordinate system of the masked image below
 
 #if a detected color is to far from the reference peak we need to increase the y box height
-box = box_all
+box = x_sides
 box_y_top = y_top
 box_y_bot = y_bot
 
 rows_y = box_y_top + box_y_bot
-#rows_y += 1
+
 sumBase = np.empty((rows_y, peaks_base.shape[0])) #empty matrix to hold the collapsed sum of images/spectra
+
+
+#fitting of a Gaussian to each detected peak before:
 
 for i, peaks in enumerate(peaks_base):
          
@@ -207,13 +217,13 @@ plt.scatter(base_centers[:,0], base_centers[:,1], facecolor='none', edgecolor="r
 
 
 #if a detected color is to far from the reference peak we need to increase the y box height
-box = box_all
+box = x_sides
 box_y_top = y_top
 box_y_bot = y_bot
 
 
 rows_y = box_y_top + box_y_bot
-#rows_y += 1
+
 
 
 sumRed = np.empty((rows_y, base_centers.shape[0]))
@@ -245,7 +255,7 @@ for i,peaks in enumerate(peaks_base):
     #ax1.set_zlabel("Intensity")
     
 #######################################################################################################
-box = box_all
+box = x_sides
 box_y_top = y_top
 box_y_bot = y_bot
 
@@ -256,7 +266,7 @@ rows_y = box_y_top + box_y_bot
 
 sumGreen = np.empty((rows_y, base_centers.shape[0]))
 
-for i,peaks in enumerate(base_centers):
+for i,peaks in enumerate(peaks_base):
     
     xmin = peaks[0] - box/2
     xmax = peaks[0] + box/2
@@ -298,22 +308,24 @@ def baseline_als(y, lam, p, niter=10):
 
 #Wavelength Calculation
 #coef comes from the calibration => coefficient of a 3rd order polynomial    
-coef = np.array([1.567e-05,  0.01667, 3.653, 680])
+coef = np.array([1.567e-05, 0.01667, 3.653, 680])
 
 p = np.poly1d(coef)
 
 #In this case there is some leaking between the channels and also because the mask box is big a lot of the 
 #masked image is background, setting this intervals to 0 takes care of this
-sumGreen[40:,:] = 0
+sumGreen[34:,:] = 0
 #sumGreen[35:,:] = 0
-sumRed[0:40,:] = 0
-sumBase[0:40,:] = 0
+sumRed[0:34,:] = 0
+sumBase[0:35,:] = 0
 
 
 #Tables to hold spectral mean for each channel
 spectralMeanTableRed = np.empty((np.shape(base_centers_trans)[0],1))
 spectralMeanTableGreen = np.empty((np.shape(base_centers_trans)[0],1))
 spectralMeanTableBase = np.empty((np.shape(base_centers_trans)[0],1))
+wavelengthTable = []
+
 
 
 #for each center in the translated coordinate system of the masked image calculates the new wavelenght calibration
@@ -330,6 +342,11 @@ for i, centers in enumerate(base_centers_trans):
     sumNormRed = (sumRed[:,i]) /np.max(sumRed[:,i])
     sumNormGreen = (sumGreen[:,i]) /np.max(sumGreen[:,i]) 
     sumNormBase = (sumBase[:,i])/np.max(sumBase[:,i]) 
+    
+    #Save spectra by wavelength
+    wavelengthTable.append(list(pixel_disp.T)) 
+    wavelengthTable.append(list(sumNormRed.T)) 
+    wavelengthTable.append(list(sumNormGreen.T)) 
     
     #Spectral mean Calculation (wavelength average weighted by intensity)
     spectralMeanRed = np.sum(np.multiply(sumRed[:,i],pixel_disp))/np.sum(sumRed[:,i])
@@ -354,17 +371,17 @@ for i, centers in enumerate(base_centers_trans):
 #    plt.ylim(560,720)
 ##    
     #if i in [5]:
-    if i not in [ 8]:
+    if i not in [8]:
         plt.figure(6)
         ##        zz = baseline_als(sumRed[30:,i], 1000000, 0.0001)
         ##        corre = sumRed[30:,i]-zz
         ##        corre = corre/np.max(corre)
-        plt.plot(pixel_disp[40:],sumNormRed[40:], label=i)
+        plt.plot(pixel_disp[34:],sumNormRed[34:], label=i)
         #plt.plot(pixel_disp,sumNormBase, label=i)
         #    #plt.legend()
         # 
         #
-        plt.plot(pixel_disp[0:40],sumNormGreen[0:40], label=i)
+        plt.plot(pixel_disp[0:34],sumNormGreen[0:34], label=i)
         #plt.legend()
         plt.xlim(500,800)
 #        plt.xlim(640,720)
@@ -383,5 +400,13 @@ plt.grid('on')
 plt.xlabel('Nominal Wavelength (nm)')
 plt.ylabel('Spectral Mean (nm)')
 
+#
+df = pd.DataFrame(wavelengthTable)
+df = df.T
+col_names = ['Wavelength', 'Red', 'Green']
 
-
+df.columns = col_names*(int(len(df.columns)/3))
+writer = pd.ExcelWriter('output.xlsx')
+df.to_excel(writer,'Sheet1')
+writer.save()
+    
