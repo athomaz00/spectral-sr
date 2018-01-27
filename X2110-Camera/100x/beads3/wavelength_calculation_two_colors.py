@@ -38,7 +38,7 @@ def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
 ################################################################################### 
     
 
-imagesFiles = [ '680.tif',  'red.tif', 'green.tif']
+imagesFiles = [ '680-5.tif',  'red-5.tif', 'green-5.tif']
 
 
 
@@ -51,7 +51,7 @@ im_green = Image.open(imagesFiles[2])
 image = np.array(image)
 
 #Check treshold, otherwise it may find more than one peak
-thr_base = np.max(image)-50*np.std(image)
+thr_base = np.max(image)-30*np.std(image)
 peaks_base = peak_local_max(image, min_distance=5, threshold_abs=thr_base)
 peaks_base[:,0], peaks_base[:,1] = peaks_base[:,1], peaks_base[:,0].copy()
 
@@ -314,7 +314,7 @@ p = np.poly1d(coef)
 
 #In this case there is some leaking between the channels and also because the mask box is big a lot of the 
 #masked image is background, setting this intervals to 0 takes care of this
-sumGreen[34:,:] = 0
+sumGreen[36:,:] = 0
 #sumGreen[35:,:] = 0
 sumRed[0:34,:] = 0
 sumBase[0:35,:] = 0
@@ -406,7 +406,10 @@ df = df.T
 col_names = ['Wavelength', 'Red', 'Green']
 
 df.columns = col_names*(int(len(df.columns)/3))
-writer = pd.ExcelWriter('output.xlsx')
+file_name = imagesFiles[0].split('-')
+file_name = file_name[1].split('.')
+
+writer = pd.ExcelWriter('output-' + file_name[0] + '.xlsx')
 df.to_excel(writer,'Sheet1')
 writer.save()
     
