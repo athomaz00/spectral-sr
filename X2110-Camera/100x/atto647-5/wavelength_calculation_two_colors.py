@@ -38,27 +38,27 @@ def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
 ################################################################################### 
     
 
-imagesFiles = [ 'STD_680-2.tif',  'STD_red-2.tif', 'STD_680-2.tif']
+imagesFiles = [ '680-2-1.tif',  'red-2-1.tif']
 
 
 
 image = Image.open(imagesFiles[0])
 im_red = Image.open(imagesFiles[1])
-im_green = Image.open(imagesFiles[2])
+
 
 
 
 image = np.array(image)
 
 #Check treshold, otherwise it may find more than one peak
-thr_base = np.max(image)-30*np.std(image)
+thr_base = np.max(image)-2.5*np.std(image)
 peaks_base = peak_local_max(image, min_distance=5, threshold_abs=thr_base)
 peaks_base[:,0], peaks_base[:,1] = peaks_base[:,1], peaks_base[:,0].copy()
 
 #Define the size of the box/rectangle to crop the image to find peaks
 x_sides = 18
-y_top = 40 #if one of the colors is too far away from 680nm rectangle
-y_bot = 20
+y_top = 12 #if one of the colors is too far away from 680nm rectangle
+y_bot = 12
 
 
 #if points are to close to the borders dont consider it 
@@ -110,28 +110,7 @@ im_red = np.array(im_red)
 #plt.scatter(peaks_red[:,0], peaks_red[:,1], facecolor='none', edgecolor="white")
 
 #############################################################################
-im_green = np.array(im_green)
 
-#thr_green = np.max(im_green)-16.5*np.std(im_green)
-#peaks_green = peak_local_max(im_green, min_distance=10, threshold_abs=thr_green)
-#peaks_green[:,0], peaks_green[:,1] = peaks_green[:,1], peaks_green[:,0].copy()
-#
-#delete_base = []
-#for i,points in enumerate(peaks_green):
-#    if points[1]-30<0:
-#        delete_base.append(i)
-#    if 512-points[0]<15:
-#        delete_base.append(i)
-#peaks_green = np.delete(peaks_green, delete_base, 0)
-#
-#print(str(peaks_green.shape[0]) + ' green peaks')
-#
-#plt.figure(4)
-#plt.imshow(im_green)
-#plt.grid('off')
-#plt.scatter(peaks_base[:,0], peaks_base[:,1], facecolor='none', edgecolor="white")
-
-#############################################
 
 #Calculation of the centers detected by the peaks of local maxima
 
@@ -259,41 +238,7 @@ for i,peaks in enumerate(peaks_base):
     #ax1.set_zlabel("Intensity")
     
 #######################################################################################################
-box = x_sides
-box_y_top = y_top
-box_y_bot = y_bot
 
-
-rows_y = box_y_top + box_y_bot
-#rows_y += 1
-
-
-sumGreen = np.empty((rows_y, base_centers.shape[0]))
-
-for i,peaks in enumerate(peaks_base):
-    
-    xmin = peaks[0] - box/2
-    xmax = peaks[0] + box/2
-    ymin = peaks[1] - box_y_top
-    ymax = peaks[1] + box_y_bot
-    
-    x = np.arange(xmin, xmax,1)
-    y = np.arange(ymin, ymax,1)
-    
-    Y, X = np.meshgrid(x,y) #note: meshgrid is needed to use an asymetric grid with plot_surface, I tried mgrid and it didn't work
-    
-
-    
-    greenMask = im_green[int(np.min(X)):int(np.max(X))+1, int(np.min(Y)):int(np.max(Y))+1] #to mask it correctly we have to invert X and Y here
-  
-    greenMaskcopy =  np.copy(im_green)[int(np.min(X)):int(np.max(X))+1, int(np.min(Y)):int(np.max(Y))+1]
-    sumGreenTemp = np.sum(greenMaskcopy, axis=1)
-
-    sumGreen[:,i] = sumGreenTemp
-    
-#    fig = plt.figure(i+10)
-#    ax1 = fig.gca(projection='3d')
-#    ax1.plot_surface(X, Y, greenMask, cmap="jet", linewidth=0, antialiased=False, alpha=0.5)
 
 
 #########################################################################################################
@@ -319,7 +264,7 @@ p = np.poly1d(coef)
 
 #In this case there is some leaking between the channels and also because the mask box is big a lot of the 
 #masked image is background, setting this intervals to 0 takes care of this
-sumGreen[36:,:] = 0
+
 #sumGreen[35:,:] = 0
 #sumRed[0:35,:] = 0
 sumBase[0:35,:] = 0
@@ -327,7 +272,7 @@ sumBase[0:35,:] = 0
 
 #Tables to hold spectral mean for each channel
 spectralMeanTableRed = np.empty((np.shape(base_centers_trans)[0],1))
-spectralMeanTableGreen = np.empty((np.shape(base_centers_trans)[0],1))
+
 spectralMeanTableBase = np.empty((np.shape(base_centers_trans)[0],1))
 wavelengthTable = []
 
@@ -345,69 +290,74 @@ for i, centers in enumerate(base_centers_trans):
 
    
     sumNormRed = (sumRed[:,i]) /np.max(sumRed[:,i])
-    sumNormGreen = (sumGreen[:,i]) /np.max(sumGreen[:,i]) 
+
     sumNormBase = (sumBase[:,i])/np.max(sumBase[:,i]) 
     
-    redMax = np.max(sumNormRed)
-    redSTD = np.std(sumNormRed)
+    redMax = np.max(sumRed[:,i])
+    redSTD = np.std(sumRed[:,i])
     
-    if (redMax-redSTD) < 0.71:
-        sumNormRed.fill(0.0)
+#    if (redSTD) < 300:
+#        sumNormRed.fill(0.0)
+#        print(i)
     
     #Save spectra by wavelength
     wavelengthTable.append(list(pixel_disp.T)) 
     wavelengthTable.append(list(sumNormRed.T)) 
-    wavelengthTable.append(list(sumNormGreen.T)) 
+
     
     #Spectral mean Calculation (wavelength average weighted by intensity)
     spectralMeanRed = np.sum(np.multiply(sumRed[:,i],pixel_disp))/np.sum(sumRed[:,i])
     
     
     
-    spectralMeanGreen = np.sum(np.multiply(sumGreen[:,i],pixel_disp))/np.sum(sumGreen[:,i])
+
     
     spectralMeanBase = np.sum(np.multiply(sumBase[:,i],pixel_disp))/np.sum(sumBase[:,i])
     
     
     spectralMeanTableRed[i,0] = spectralMeanRed
-    spectralMeanTableGreen[i,0] = spectralMeanGreen
+
     spectralMeanTableBase[i,0] = spectralMeanBase
     
     
     plt.figure(4)
-    plt.scatter([680.0],spectralMeanRed )
-    plt.scatter([580.0],spectralMeanGreen )
+    plt.scatter([700.0],spectralMeanRed )
+    plt.xlim(570,750)
+
     #plt.scatter([677.0],spectralMeanBase )
 ##    plt.xticks(np.arange(560,720,20))
 #    plt.yticks(np.arange(560,720,20))
 #    plt.xlim(560,720)
 #    plt.ylim(560,720)
 ##    
-    #if i in [5]:
+    #if i not in [0,2, 4, 5, 10,12, 16, 15,  9,17, 11, 6, 14]: #round-1 excludes
     if i not in [100]:
-        plt.figure(6)
+        plt.figure( figsize=(4,8))
         ##        zz = baseline_als(sumRed[30:,i], 1000000, 0.0001)
         ##        corre = sumRed[30:,i]-zz
         ##        corre = corre/np.max(corre)
         plt.plot(pixel_disp,sumNormRed, label=i)
         #plt.plot(pixel_disp,sumNormBase, label=i)
-        #plt.legend()
+        plt.legend()
         # 
         #
-        #plt.plot(pixel_disp[0:34],sumNormGreen[0:34], label=i)
-        #plt.legend()
-        plt.xlim(650,800)
+
+
+        #plt.xlim(600,780)
+        plt.title('Spectra of bQD705nm Invitrogen')
+        plt.xlabel('Wavelength (nm)')
+        plt.ylabel('Normalized Intensity (a.u.)')
 #        plt.xlim(640,720)
-#        plt.ylim(0,1.2)
+        #plt.ylim(0.2,1.05)
 #    
 #Plot spectral mean for each color/dye
 plt.figure(3)
-plt.errorbar([580.0], np.mean(spectralMeanTableGreen),yerr=np.std(spectralMeanTableGreen), marker='o', markersize=5)
-plt.errorbar([680.0], np.mean(spectralMeanTableRed), yerr=np.std(spectralMeanTableRed), marker='o', markersize=5)
+
+plt.errorbar([700.0], np.mean(spectralMeanTableRed), yerr=np.std(spectralMeanTableRed), marker='o', markersize=5)
 #plt.errorbar([680.0], np.mean(spectralMeanTableBase), yerr=np.std(spectralMeanTableBase), marker='o', markersize=5)
 plt.xticks(np.arange(560,750,20))
 plt.yticks(np.arange(560,750,20))
-plt.xlim(570,700)
+plt.xlim(570,750)
 plt.ylim(560,720)
 plt.grid('on')
 plt.xlabel('Nominal Wavelength (nm)')
@@ -416,9 +366,9 @@ plt.ylabel('Spectral Mean (nm)')
 #
 df = pd.DataFrame(wavelengthTable)
 df = df.T
-col_names = ['Wavelength', 'Red', 'Green']
+col_names = ['Wavelength', 'Red']
 
-df.columns = col_names*(int(len(df.columns)/3))
+df.columns = col_names*(int(len(df.columns)/2))
 file_name = imagesFiles[0].split('-')
 file_name = file_name[1].split('.')
 
