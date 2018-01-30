@@ -9,7 +9,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-files = ['output-1.xlsx'] #, 'output-2.xlsx', 'output-3.xlsx', 'output-4.xlsx', 'output-5.xlsx']
+files = ['output-1.xlsx', 'output-2.xlsx', 'output-3.xlsx', 'output-4.xlsx', 'output-5.xlsx']
 
 #df = pd.read_excel(files[0])
 
@@ -22,7 +22,7 @@ def plot_graph(file):
         red_col = i+1
 
         plt.figure(1, figsize=(4,8))
-        if i not in [10, 13, 18, 34, 38, 39, 40]:
+        if i not in [100]:
             plt.plot(df.iloc[:,i],df.iloc[:,red_col])
             plt.xlabel('Wavelength (nm)')
             plt.ylabel('Normalized Intensity (a.u.)')
