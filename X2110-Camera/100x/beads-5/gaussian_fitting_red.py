@@ -8,13 +8,12 @@
 # - Parameters
 # - Chi square
 # - If output is 0,0,0 it means chi square for the fitting is less than 0.05
-# Output2: xlsx file with centers and sigmas for each fitting
 # Created on Mon Jan 29 18:17:55 2018
 # 
 # @author: Andre Thomaz
 # =============================================================================
 
-from lmfit.models import GaussianModel, LorentzianModel
+from lmfit.models import GaussianModel, LorentzianModel, SkewedGaussianModel
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,30 +27,30 @@ def fitting(x,y):
      fitG  = gmodel.fit(y, parsG, x=x)
      chiG = fitG.chisqr
      #print(out.fit_report(min_correl=0.25))
-#     plt.figure()
-#     plt.plot(x,y, 'o')
-#     plt.plot(x, fitG.best_fit, 'r-')
-#     print(chiG,i)
+     plt.figure()
+     plt.plot(x,y, 'o')
+     plt.plot(x, fitG.best_fit, 'r-')
+     print(chiG,i)
      
      lmodel = LorentzianModel()
      parsL = lmodel.guess(y, x=x)
      fitL = lmodel.fit(y, parsL, x=x )
      chiL = fitL.chisqr
-#     plt.figure()
-#     plt.plot(x,y, 'o')
-#     plt.plot(x, fitL.best_fit, 'r-')
-#     print(chiL,i)
+     plt.figure()
+     plt.plot(x,y, 'o')
+     plt.plot(x, fitL.best_fit, 'r-')
+     print(chiL,i)
      
-     if chiG < chiL and chiG<0.05:
-         return ['gaussian',fitG.values, chiG]
-     elif chiL <0.05:
+     if chiG < chiL and 0.0<chiG<0.069 :
+         return ['GaussianModel',fitG.values, chiG]
+     elif 0.0<chiL<0.069:
          return ['lorentzian',fitL.values, chiL]
      else:
          return [0, 0, 0]
  
 # =============================================================================
 
-file = 'output-5.xlsx'
+file = 'output-6.xlsx'
 
 specs = pd.read_excel(file)
 
@@ -61,12 +60,12 @@ fittingTable =[]
 
 i=0
 while i<int(columns): 
-    x = specs.iloc[3:24,i]
-    y = specs.iloc[3:24,i+1]
+    x = specs.iloc[38:68,i].values
+    y = specs.iloc[38:68,i+1].values
     
     fit = fitting(x,y)
     fittingTable.append(fit)
-    i += 2
+    i += 3
 
 df = pd.DataFrame(fittingTable, columns=['fitting-function', 'values', 'chisq'])
 
