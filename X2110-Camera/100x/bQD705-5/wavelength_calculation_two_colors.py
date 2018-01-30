@@ -38,7 +38,7 @@ def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
 ################################################################################### 
     
 
-imagesFiles = [ 'STD_680-1.tif',  'STD_red-1.tif']
+imagesFiles = [ 'STD_680-5.tif',  'STD_red-5.tif']
 
 
 
@@ -51,7 +51,7 @@ im_red = Image.open(imagesFiles[1])
 image = np.array(image)
 
 #Check treshold, otherwise it may find more than one peak
-thr_base = np.max(image)-30.5*np.std(image)
+thr_base = np.max(image)-55.5*np.std(image)
 peaks_base = peak_local_max(image, min_distance=5, threshold_abs=thr_base)
 peaks_base[:,0], peaks_base[:,1] = peaks_base[:,1], peaks_base[:,0].copy()
 
@@ -276,6 +276,14 @@ spectralMeanTableRed = np.empty((np.shape(base_centers_trans)[0],1))
 spectralMeanTableBase = np.empty((np.shape(base_centers_trans)[0],1))
 wavelengthTable = []
 
+#   [7,12,22,26]: 680-1.tif
+#   [7, 13, 28] 680-2.tif
+#   [9,11,19,23,26,29,33,34,36,37,38,40,41,47,48,49,59] 680-3.tif
+#   [10,11] 680-4.tif
+
+
+
+listToClean = [1, 3, 7, 9, 12, 16, 17, 18, 19]
 
 
 #for each center in the translated coordinate system of the masked image calculates the new wavelenght calibration
@@ -288,8 +296,10 @@ for i, centers in enumerate(base_centers_trans):
     pixels_y = pixels - y_center
     pixel_disp = p(pixels_y)
 
-   
-    if i not in [7,12,22,26]:
+    
+
+  
+    if i not in listToClean:
         sumNormRed = (sumRed[:,i]) /np.max(sumRed[:,i])
     
         sumNormBase = (sumBase[:,i])/np.max(sumBase[:,i]) 
@@ -342,8 +352,7 @@ for i, centers in enumerate(base_centers_trans):
         plt.plot(pixel_disp,sumNormRed, label=i)
         #plt.plot(pixel_disp,sumNormBase, label=i)
         #plt.legend()
-            # 
-            #
+
     
     
     #plt.xlim(600,780)
@@ -352,11 +361,14 @@ for i, centers in enumerate(base_centers_trans):
         plt.ylabel('Normalized Intensity (a.u.)')
     #        plt.xlim(640,720)
         #plt.ylim(0.2,1.05)
+        
+MeanTableRed_msk = spectralMeanTableRed[spectralMeanTableRed>580]
+
 #    
 #Plot spectral mean for each color/dye
 plt.figure(3)
 
-plt.errorbar([700.0], np.mean(spectralMeanTableRed), yerr=np.std(spectralMeanTableRed), marker='o', markersize=5)
+plt.errorbar([700.0], np.mean(MeanTableRed_msk), yerr=np.std(MeanTableRed_msk), marker='o', markersize=5)
 #plt.errorbar([680.0], np.mean(spectralMeanTableBase), yerr=np.std(spectralMeanTableBase), marker='o', markersize=5)
 plt.xticks(np.arange(560,750,20))
 plt.yticks(np.arange(560,750,20))
