@@ -36,9 +36,19 @@ def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
     return g.ravel()
 
 ################################################################################### 
+#   [5,6,8] treshold_base = 60 ---- 605-1.tif
+#   [0 , 6, 10, 12, 17] treshold_base = 50 ----- 605-2.tif
+#   [4,2] treshold_base = 50 ----- 605-3.tif
+# 
+#  [5] treshold_base = 50 ----- 605-5.tif 
+
+
+listToClean = [5]
+
+
     
 
-imagesFiles = [ 'STD_605-2.tif',  'STD_full-2.tif']
+imagesFiles = [ 'STD_605-5.tif',  'STD_full-5.tif']
 
 
 
@@ -276,14 +286,7 @@ spectralMeanTableRed = np.empty((np.shape(base_centers_trans)[0],1))
 spectralMeanTableBase = np.empty((np.shape(base_centers_trans)[0],1))
 wavelengthTable = []
 
-#   [5,6,8]: 605-1.tif
-#   [0 , 6, 10, 12, 17] 605-2.tif
-#   [4,2] 605-3.tif
-# 
-#  [5] 605-5.tif 
 
-
-listToClean = [0 , 6, 10, 12, 17]
 
 
 #for each center in the translated coordinate system of the masked image calculates the new wavelenght calibration
@@ -351,7 +354,7 @@ for i, centers in enumerate(base_centers_trans):
         ##        corre = corre/np.max(corre)
         plt.plot(pixel_disp,sumNormRed, label=i)
         #plt.plot(pixel_disp,sumNormBase, label=i)
-        #plt.legend()
+        plt.legend()
 
     
     
@@ -384,7 +387,7 @@ df = df.T
 col_names = ['Wavelength', 'Red']
 
 df.columns = col_names*(int(len(df.columns)/2))
-file_name = imagesFiles[0].split('-')
+file_name = imagesFiles[0].split('_')
 file_name = file_name[1].split('.')
 
 writer = pd.ExcelWriter('output-' + file_name[0] + '.xlsx')

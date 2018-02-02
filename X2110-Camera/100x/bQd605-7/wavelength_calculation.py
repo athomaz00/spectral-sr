@@ -36,9 +36,18 @@ def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
     return g.ravel()
 
 ################################################################################### 
+#   [0,2, 4, 5, 8, 9, 20, 24, 39, 45, 46, 54, 33] thr_base=30 ---- 605-1.tif
+#    [4,8,13, 16, 19,20, 28, 35, 37  ] thr_base=30 ---- 605-2.tif
+#   [6, 8, 11, 16, 21, 22,35, 26, 29,  32, 36, 38, 42, 50,25 ] thr_base=25 ---- 605-3.tif
+# [3,7,24,26,28,34,37,40,41,42,43] thr_base=20.5 ----  605-4.tif
+#   [1,6,7,8,10,23,33,36,44,50,53,56,57, 5,12,41,43,49, 38] thr_base=30 ---- 605-5.tif 
+
+
+listToClean = [0,2, 4, 5, 8, 9, 20, 24, 39, 45, 46, 54, 33 ]
+
     
 
-imagesFiles = [ 'STD_605-5.tif',  'STD_full-5.tif']
+imagesFiles = [ 'STD_605-1.tif',  'STD_full-1.tif']
 
 
 
@@ -276,14 +285,6 @@ spectralMeanTableRed = np.empty((np.shape(base_centers_trans)[0],1))
 spectralMeanTableBase = np.empty((np.shape(base_centers_trans)[0],1))
 wavelengthTable = []
 
-#   [0,2, 4, 5, 8, 9, 20, 24, 39, 45, 46, 54, 33] 605-1.tif
-#    [4,8,13, 16, 19,20, 28, 35, 37  ] 605-2.tif
-#   [6, 8, 11, 16, 21, 22,35, 26, 29,  32, 36, 38, 42, 50,25 ] 605-3.tif
-# [6, 22, 26, 35, 38, 40 ] 605-4.tif
-#   605-5.tif 
-
-
-listToClean = [1,6,7,8,10,23,33,36,44,50,53,56,57, 5,12,41,43,49, 38]
 
 
 #for each center in the translated coordinate system of the masked image calculates the new wavelenght calibration
@@ -384,7 +385,7 @@ df = df.T
 col_names = ['Wavelength', 'Red']
 
 df.columns = col_names*(int(len(df.columns)/2))
-file_name = imagesFiles[0].split('-')
+file_name = imagesFiles[0].split('_')
 file_name = file_name[1].split('.')
 
 writer = pd.ExcelWriter('output-' + file_name[0] + '.xlsx')
