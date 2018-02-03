@@ -57,7 +57,7 @@ def fitting(x,y):
  
 # =============================================================================
 
-file = 'output-5.xlsx'
+file = 'output-sQD620-5.xlsx'
 
 specs = pd.read_excel(file)
 
@@ -78,22 +78,28 @@ df = pd.DataFrame(fittingTable, columns=['fitting-function', 'values', 'chisq'])
 
 sigmaTable = []
 centerTable = []
+amplitudeTable = []
+functionTable = []
 
 for i, row in df.iterrows():
     if row['values'] != 0:
-        sigmaTable.append(row['values']['sigma'])
-        centerTable.append(row['values']['center'])
+        sigmaTable.append(float(row['values']['sigma']))
+        centerTable.append(float(row['values']['center']))
+        amplitudeTable.append(float(row['values']['amplitude']))
+        functionTable.append(row['fitting-function'])
         
-centers_sigma = np.array([centerTable, sigmaTable])
+centers_sigma = np.array([centerTable, sigmaTable, amplitudeTable, functionTable])
 centers_sigma = centers_sigma.T
 
-centers_sigma = pd.DataFrame(centers_sigma, columns=['centers', 'sigmas'])
+centers_sigma = pd.DataFrame(centers_sigma, columns=['centers', 'sigmas', 'amplitude', 'function'])
 
-fileName = file.split('-')
+
+
+fileName = file.split('output')
 
 #writer = pd.ExcelWriter('fitting-' + fileName[1])
 #df.to_excel(writer,'Sheet1')
-writer = pd.ExcelWriter('center-sigma-' + fileName[1])
+writer = pd.ExcelWriter('center-sigma' + fileName[1])
 centers_sigma.to_excel(writer,'Sheet1')
 writer.save()
 

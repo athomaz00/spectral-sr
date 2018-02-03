@@ -45,7 +45,7 @@ def twoD_Gaussian(x_y, offset, amplitude, xo, yo, sigma_x, sigma_y, theta):
 
 listToClean = [7,12,22,26]
 
-imagesFiles = [ 'STD_680-1.tif',  'STD_red-1.tif']
+imagesFiles = [ 'STD_680-1.tif',  'STD_bQD705-1.tif']
 
 
 
@@ -384,7 +384,7 @@ df = df.T
 col_names = ['Wavelength', 'Red']
 
 df.columns = col_names*(int(len(df.columns)/2))
-file_name = imagesFiles[0].split('_')
+file_name = imagesFiles[1].split('_')
 file_name = file_name[1].split('.')
 
 writer = pd.ExcelWriter('output-' + file_name[0] + '.xlsx')

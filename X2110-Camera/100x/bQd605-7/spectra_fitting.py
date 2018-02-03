@@ -24,23 +24,29 @@ import numpy as np
 # =============================================================================
 def fitting(x,y):
      gmodel = GaussianModel()
-     parsG = gmodel.guess(y, x=x)
+     try:
+         parsG = gmodel.guess(y, x=x)
+     except KeyError:
+         parsG = gmodel.make_params(sigma=30, center=605.0, amplitude=1.0) 
      fitG  = gmodel.fit(y, parsG, x=x)
      chiG = fitG.chisqr
-     #print(out.fit_report(min_correl=0.25))
-#     plt.figure()
-#     plt.plot(x,y, 'o')
-#     plt.plot(x, fitG.best_fit, 'r-')
-#     print(chiG,i)
+     #print(fitG.fit_report(min_correl=0.25))
+     plt.figure()
+     plt.plot(x,y, 'o')
+     plt.plot(x, fitG.best_fit, 'r-')
+     print(chiG,i)
      
      lmodel = LorentzianModel()
-     parsL = lmodel.guess(y, x=x)
+     try:    
+         parsL = lmodel.guess(y, x=x)
+     except KeyError:
+         parsL = lmodel.make_params(sigma=30, center=605.0, amplitude=1.0) 
      fitL = lmodel.fit(y, parsL, x=x )
      chiL = fitL.chisqr
-#     plt.figure()
-#     plt.plot(x,y, 'o')
-#     plt.plot(x, fitL.best_fit, 'r-')
-#     print(chiL,i)
+     plt.figure()
+     plt.plot(x,y, 'o')
+     plt.plot(x, fitL.best_fit, 'r-')
+     print(chiL,i)
      
      if chiG < chiL and chiG<0.05:
          return ['gaussian',fitG.values, chiG]
@@ -51,7 +57,7 @@ def fitting(x,y):
  
 # =============================================================================
 
-file = 'output-5.xlsx'
+file = 'output-bQD605-5.xlsx'
 
 specs = pd.read_excel(file)
 
@@ -61,8 +67,8 @@ fittingTable =[]
 
 i=0
 while i<int(columns): 
-    x = specs.iloc[3:24,i]
-    y = specs.iloc[3:24,i+1]
+    x = specs.iloc[5:22,i]
+    y = specs.iloc[5:22,i+1]
     
     fit = fitting(x,y)
     fittingTable.append(fit)
@@ -72,22 +78,28 @@ df = pd.DataFrame(fittingTable, columns=['fitting-function', 'values', 'chisq'])
 
 sigmaTable = []
 centerTable = []
+amplitudeTable = []
+functionTable = []
 
 for i, row in df.iterrows():
     if row['values'] != 0:
-        sigmaTable.append(row['values']['sigma'])
-        centerTable.append(row['values']['center'])
+        sigmaTable.append(float(row['values']['sigma']))
+        centerTable.append(float(row['values']['center']))
+        amplitudeTable.append(float(row['values']['amplitude']))
+        functionTable.append(row['fitting-function'])
         
-centers_sigma = np.array([centerTable, sigmaTable])
+centers_sigma = np.array([centerTable, sigmaTable, amplitudeTable, functionTable])
 centers_sigma = centers_sigma.T
 
-centers_sigma = pd.DataFrame(centers_sigma, columns=['centers', 'sigmas'])
+centers_sigma = pd.DataFrame(centers_sigma, columns=['centers', 'sigmas', 'amplitude', 'function'])
+
+
 
 fileName = file.split('output')
 
 #writer = pd.ExcelWriter('fitting-' + fileName[1])
 #df.to_excel(writer,'Sheet1')
-writer = pd.ExcelWriter('center-sigma-' + fileName[1])
+writer = pd.ExcelWriter('center-sigma' + fileName[1])
 centers_sigma.to_excel(writer,'Sheet1')
 writer.save()
 

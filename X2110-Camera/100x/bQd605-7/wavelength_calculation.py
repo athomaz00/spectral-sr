@@ -47,7 +47,7 @@ listToClean = [0,2, 4, 5, 8, 9, 20, 24, 39, 45, 46, 54, 33 ]
 
     
 
-imagesFiles = [ 'STD_605-1.tif',  'STD_full-1.tif']
+imagesFiles = [ 'STD_605-1.tif',  'STD_bQD605-1.tif']
 
 
 
@@ -385,7 +385,7 @@ df = df.T
 col_names = ['Wavelength', 'Red']
 
 df.columns = col_names*(int(len(df.columns)/2))
-file_name = imagesFiles[0].split('_')
+file_name = imagesFiles[1].split('_')
 file_name = file_name[1].split('.')
 
 writer = pd.ExcelWriter('output-' + file_name[0] + '.xlsx')

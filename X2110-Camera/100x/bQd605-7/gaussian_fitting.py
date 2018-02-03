@@ -89,7 +89,7 @@ centers_sigma = centers_sigma.T
 
 centers_sigma = pd.DataFrame(centers_sigma, columns=['centers', 'sigmas'])
 
-fileName = file.split('-')
+fileName = file.split('output')
 
 #writer = pd.ExcelWriter('fitting-' + fileName[1])
 #df.to_excel(writer,'Sheet1')
