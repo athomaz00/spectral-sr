@@ -5,18 +5,21 @@ Created on Fri Feb  2 14:14:38 2018
 @author: athomaz
 """
 
-from lmfit.models import GaussianModel, LorentzianModel
+from lmfit.models import GaussianModel, LorentzianModel, PseudoVoigtModel
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-files = ['center-sigma-sQD620-1.xlsx', 'center-sigma-sQD620-2.xlsx', 'center-sigma-sQD620-3.xlsx', 'center-sigma-sQD620-5.xlsx']
+files = ['center-sigma-v-sQD620-1.xlsx', 'center-sigma-v-sQD620-2.xlsx', 'center-sigma-v-sQD620-3.xlsx', 'center-sigma-v-sQD620-5.xlsx']
 
 def  lorentzian(x, A, mu, sigma):
     return (A/np.pi)*(sigma/((x-mu)**2 + sigma**2))
 
 def gaussian(x, A, mu, sigma):
     return (A/(sigma*np.sqrt(2*np.pi)))*np.exp(-(x-mu)**2/(2*sigma**2))
+
+def pvoight(x, A, mu, sigma, fraction):
+    return (1.0-fraction)*(A/((sigma/np.sqrt(2*np.log(2)))*np.sqrt(2*np.pi)))*np.exp(-(x-mu)**2/(2*sigma**2))+ fraction*(A/np.pi)*(sigma/((x-mu)**2 + sigma**2))
 
 
 
@@ -39,6 +42,10 @@ for i,row in df.iterrows():
         yg = gaussian(x, row['amplitude'], row['centers'], row['sigmas'])
         specs.append(yg)
         plt.plot(x, gaussian(x, row['amplitude'], row['centers'], row['sigmas']))
+    elif row['function'] == 'pvoight':
+        yv = pvoight(x, row['amplitude'], row['centers'], row['sigmas'], row['fraction'])
+        specs.append(yv)
+        plt.plot(x, pvoight(x, row['amplitude'], row['centers'], row['sigmas'], row['fraction']))
         
 plt.xlabel('Wavelength (nm)')
 plt.ylabel('Normalized Intensity (a.u.)')
@@ -84,20 +91,29 @@ parsG = gmodel.guess(ys, x=x)
 fitG = gmodel.fit(ys, parsG, x=x)
 chiG = fitG.chisqr
 
+vmodel = PseudoVoigtModel()
+parsV = vmodel.guess(ys, x=x)
+fitV = vmodel.fit(ys, parsV, x=x)
+chiV = fitV.chisqr
+
 
 
 plt.figure()
 plt.plot(x, ys, '--r')
 plt.plot(x, fitL.best_fit, 'g')
 plt.plot(x, fitG.best_fit, 'k')
+plt.plot(x, fitV.best_fit, 'b')
 
-if chiL<chiG:
+if chiL<chiG and chiL<chiV:
     print(fitL.best_values)
     print(fitL.fit_report(min_correl=0.25))
 
-else:
+elif chiG<chiV:
     print(fitG.best_values)
     print(fitG.fit_report(min_correl=0.25))
-    
+else:
+    print(fitV.best_values)
+    print(fitV.fit_report(min_correl=0.25))
+
     
     

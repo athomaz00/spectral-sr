@@ -4,6 +4,8 @@ Created on Fri Feb  2 14:14:38 2018
 
 @author: athomaz
 """
+import seaborn
+seaborn.set()
 
 from lmfit.models import GaussianModel, LorentzianModel
 import pandas as pd

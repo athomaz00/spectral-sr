@@ -13,13 +13,15 @@
 # 
 # @author: Andre Thomaz
 # =============================================================================
-
-from lmfit.models import GaussianModel, LorentzianModel
+from lmfit import Parameters
+from lmfit.models import GaussianModel, LorentzianModel, VoigtModel,PseudoVoigtModel
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.optimize import curve_fit
 
-
+def pvoight(x, A, mu, sigma, fraction):
+    return (1.0-fraction)*(A/((sigma/np.sqrt(2*np.log(2)))*np.sqrt(2*np.pi)))*np.exp(-(x-mu)**2/(2*sigma**2))+ fraction*(A/np.pi)*(sigma/((x-mu)**2 + sigma**2))
 
 # =============================================================================
 def fitting(x,y):
@@ -33,7 +35,7 @@ def fitting(x,y):
      #print(fitG.fit_report(min_correl=0.25))
      plt.figure()
      plt.plot(x,y, 'o')
-     plt.plot(x, fitG.best_fit, 'r-')
+     plt.plot(x, fitG.best_fit, 'g-')
      print(chiG,i)
      
      lmodel = LorentzianModel()
@@ -45,19 +47,43 @@ def fitting(x,y):
      chiL = fitL.chisqr
      plt.figure()
      plt.plot(x,y, 'o')
-     plt.plot(x, fitL.best_fit, 'r-')
+     plt.plot(x, fitL.best_fit, 'b-')
      print(chiL,i)
      
-     if chiG < chiL and chiG<0.05:
+     vmodel = PseudoVoigtModel()
+     paramsV = Parameters()
+     paramsV.add('sigma', value=30)
+     paramsV.add('center', value=605.0)
+     paramsV.add('amplitude', value=1.0)
+     paramsV.add('fraction', value=0.2, max=1.0)
+     paramsV.add('fwhm', value=20)
+     try: 
+         parsV = vmodel.guess(y, x=x)
+     except KeyError:
+         parsV = vmodel.make_params(sigma=30, center=605.0, amplitude=1.0, fraction=0.5) 
+     fitV = vmodel.fit(y, parsV, x=x )
+     popt, pcov = curve_fit(pvoight, x, y, p0=[70.0, 605.0, 30.0, 0.5], maxfev=20000)
+     chiV = fitV.chisqr
+     #print(fitV.fit_report(min_correl=0.25))
+     plt.figure()
+     plt.plot(x,y, 'o')
+     plt.plot(x, fitV.best_fit, 'k-')
+     plt.plot(x, pvoight(x, *popt), 'r-')
+     print(chiV,i)
+     print(popt)
+     
+     if chiG < chiL and 0<chiG<0.05:
          return ['gaussian',fitG.values, chiG]
-     elif chiL <0.05:
+     elif chiL<chiV and 0<chiL <0.05:
          return ['lorentzian',fitL.values, chiL]
+     elif chiV<0.05:
+          return ['pvoight',fitV.values, chiV]
      else:
          return [0, 0, 0]
  
 # =============================================================================
 
-file = 'output-sQD620-5.xlsx'
+file = 'output-sQD620-2.xlsx'
 
 specs = pd.read_excel(file)
 
@@ -79,6 +105,7 @@ df = pd.DataFrame(fittingTable, columns=['fitting-function', 'values', 'chisq'])
 sigmaTable = []
 centerTable = []
 amplitudeTable = []
+fractionTable = []
 functionTable = []
 
 for i, row in df.iterrows():
@@ -86,12 +113,16 @@ for i, row in df.iterrows():
         sigmaTable.append(float(row['values']['sigma']))
         centerTable.append(float(row['values']['center']))
         amplitudeTable.append(float(row['values']['amplitude']))
+        if row['fitting-function'] == 'pvoight':
+            fractionTable.append(float(row['values']['fraction']))
+        else: 
+            fractionTable.append(0.0)
         functionTable.append(row['fitting-function'])
         
-centers_sigma = np.array([centerTable, sigmaTable, amplitudeTable, functionTable])
+centers_sigma = np.array([centerTable, sigmaTable, amplitudeTable, fractionTable, functionTable])
 centers_sigma = centers_sigma.T
 
-centers_sigma = pd.DataFrame(centers_sigma, columns=['centers', 'sigmas', 'amplitude', 'function'])
+centers_sigma = pd.DataFrame(centers_sigma, columns=['centers', 'sigmas', 'amplitude', 'fraction', 'function'])
 
 
 
@@ -99,7 +130,7 @@ fileName = file.split('output')
 
 #writer = pd.ExcelWriter('fitting-' + fileName[1])
 #df.to_excel(writer,'Sheet1')
-writer = pd.ExcelWriter('center-sigma' + fileName[1])
+writer = pd.ExcelWriter('center-sigma-v' + fileName[1])
 centers_sigma.to_excel(writer,'Sheet1')
 writer.save()
 

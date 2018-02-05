@@ -38,11 +38,11 @@ def fitting(x,y):
      chiL = fitL.chisqr
      plt.figure()
      plt.plot(x,y, 'o')
-     plt.plot(x, fitL.best_fit, 'r-')
+     plt.plot(x, fitL.best_fit, 'g-')
      print(chiL,i)
      
      if chiG < chiL and 0.0<chiG<0.055 :
-         return ['GaussianModel',fitG.values, chiG]
+         return ['gaussian',fitG.values, chiG]
      elif 0.0<chiL<0.055:
          return ['lorentzian',fitL.values, chiL]
      else:
@@ -50,7 +50,7 @@ def fitting(x,y):
  
 # =============================================================================
 
-file = 'output-5.xlsx'
+file = 'output-3.xlsx'
 
 specs = pd.read_excel(file)
 
@@ -71,16 +71,18 @@ df = pd.DataFrame(fittingTable, columns=['fitting-function', 'values', 'chisq'])
 
 sigmaTable = []
 centerTable = []
+functionTable = []
 
 for i, row in df.iterrows():
     if row['values'] != 0:
         sigmaTable.append(row['values']['sigma'])
         centerTable.append(row['values']['center'])
+        functionTable.append(row['fitting-function'])
         
-centers_sigma = np.array([centerTable, sigmaTable])
+centers_sigma = np.array([centerTable, sigmaTable, functionTable])
 centers_sigma = centers_sigma.T
 
-centers_sigma = pd.DataFrame(centers_sigma, columns=['centers', 'sigmas'])
+centers_sigma = pd.DataFrame(centers_sigma, columns=['centers', 'sigmas', 'function'])
 print(str(centers_sigma.count()[0]) + ' particles')
 
 fileName = file.split('-')
