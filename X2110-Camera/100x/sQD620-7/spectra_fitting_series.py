@@ -48,22 +48,25 @@ def fitting(x,y):
 #     plt.figure()
 #     plt.plot(x,y, 'o')
 #     plt.plot(x, fitL.best_fit, 'b-')
-     print(chiL,i)
+     #print(chiL,i)
      
 
      
      if chiG < chiL and 0<chiG<0.05:
-         return ['gaussian',fitG.values, chiG]
+         return ['gaussian',fitG.values['center'], fitG.values['sigma'],fitG.values['amplitude'], chiG]
      elif  0<chiL <0.05:
-         return ['lorentzian',fitL.values, chiL]
+         return ['lorentzian',fitL.values['center'], fitL.values['sigma'],fitL.values['amplitude'], chiL]
      else:
          return [0, 0, 0]
  
 # =============================================================================
 
-file = 'series-sQD620-1.xlsx'
+file_wave = 'series-sQD620-1.xlsx'
+file_int = 'int-series-sQD620-1.xlsx'
 
-specs = pd.read_excel(file)
+
+specs = pd.read_excel(file_wave)
+intensity = pd.read_excel(file_int)
 
 columns = len(specs.columns)
 
@@ -75,32 +78,51 @@ while i<int(columns):
     y = specs.iloc[5:22,i+1]/np.max(specs.iloc[5:22,i+1])
     
     fit = fitting(x,y)
+    j = int(i/2)
+    print(j)
+    fit.append(intensity.iloc[j][0])
     fittingTable.append(fit)
+
+    
     i += 2
 
-df = pd.DataFrame(fittingTable, columns=['fitting-function', 'values', 'chisq'])
+df = pd.DataFrame(fittingTable, columns=['fitting-function', 'center', 'sigma', 'amplitude', 'chisq', 'intensity'])
+
+
+table = []
+i = 0
+while i<13:
+     
+    table.append([df.iloc[i::13,:]['center'].values, df.iloc[i::13,:]['intensity'].values])
+
+    i += 1
+
+
+table = np.array(table)
+    
+      
+
+
 
 sigmaTable = []
 centerTable = []
 amplitudeTable = []
-fractionTable = []
 functionTable = []
+intTable = []
+
 
 for i, row in df.iterrows():
-    if row['values'] != 0:
-        sigmaTable.append(float(row['values']['sigma']))
-        centerTable.append(float(row['values']['center']))
-        amplitudeTable.append(float(row['values']['amplitude']))
-        if row['fitting-function'] == 'pvoight':
-            fractionTable.append(float(row['values']['fraction']))
-        else: 
-            fractionTable.append(0.0)
+    if row['center'] != 0 and row['intensity'] != 0 :
+        sigmaTable.append(float(row['sigma']))
+        centerTable.append(float(row['center']))
+        amplitudeTable.append(float(row['amplitude']))
         functionTable.append(row['fitting-function'])
+        intTable.append(row['intensity'])
         
-centers_sigma = np.array([centerTable, sigmaTable, amplitudeTable, fractionTable, functionTable])
+centers_sigma = np.array([centerTable, sigmaTable, amplitudeTable, functionTable, intTable])
 centers_sigma = centers_sigma.T
 
-centers_sigma = pd.DataFrame(centers_sigma, columns=['centers', 'sigmas', 'amplitude', 'fraction', 'function'])
+centers_sigma = pd.DataFrame(centers_sigma, columns=['centers', 'sigmas', 'amplitude',  'function', 'intensity',])
 
 
 

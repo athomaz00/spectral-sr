@@ -77,19 +77,19 @@ ys = specsSum# /np.max(specsSum)
 plt.plot(x, ys/np.max(ys), '--r', lw=2.0)
 
 lmodel = LorentzianModel()
-parsL = lmodel.guess(ys, x=x)
-fitL = lmodel.fit(ys, parsL, x=x)
+parsL = lmodel.guess(ys/np.max(ys), x=x)
+fitL = lmodel.fit(ys/np.max(ys), parsL, x=x)
 chiL = fitL.chisqr
 
 gmodel = GaussianModel()
-parsG = gmodel.guess(ys, x=x)
-fitG = gmodel.fit(ys, parsG, x=x)
+parsG = gmodel.guess(ys/np.max(ys), x=x)
+fitG = gmodel.fit(ys/np.max(ys), parsG, x=x)
 chiG = fitG.chisqr
 
 
 
 plt.figure()
-plt.plot(x, ys, '--r')
+plt.plot(x, ys/np.max(ys), '--r')
 plt.plot(x, fitL.best_fit, 'g')
 plt.plot(x, fitG.best_fit, 'k')
 

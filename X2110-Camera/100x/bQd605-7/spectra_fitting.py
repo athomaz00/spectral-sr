@@ -14,7 +14,7 @@
 # @author: Andre Thomaz
 # =============================================================================
 
-from lmfit.models import GaussianModel, LorentzianModel
+from lmfit.models import GaussianModel, LorentzianModel, SkewedGaussianModel
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -23,7 +23,7 @@ import numpy as np
 
 # =============================================================================
 def fitting(x,y):
-     gmodel = GaussianModel()
+     gmodel = SkewedGaussianModel()
      try:
          parsG = gmodel.guess(y, x=x)
      except KeyError:
@@ -33,7 +33,7 @@ def fitting(x,y):
      #print(fitG.fit_report(min_correl=0.25))
      plt.figure()
      plt.plot(x,y, 'o')
-     plt.plot(x, fitG.best_fit, 'r-')
+     plt.plot(x, fitG.best_fit, 'g-')
      print(chiG,i)
      
      lmodel = LorentzianModel()
@@ -99,9 +99,9 @@ fileName = file.split('output')
 
 #writer = pd.ExcelWriter('fitting-' + fileName[1])
 #df.to_excel(writer,'Sheet1')
-writer = pd.ExcelWriter('center-sigma' + fileName[1])
-centers_sigma.to_excel(writer,'Sheet1')
-writer.save()
+#writer = pd.ExcelWriter('center-sigma' + fileName[1])
+#centers_sigma.to_excel(writer,'Sheet1')
+#writer.save()
 
 
 

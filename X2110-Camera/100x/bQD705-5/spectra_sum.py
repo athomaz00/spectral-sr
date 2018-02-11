@@ -72,7 +72,8 @@ specs=np.array(specs)
 specs = specs.T
 specsSum = np.sum(specs, axis=1)
 ys = specsSum# /np.max(specsSum)
-plt.plot(x, ys/np.max(ys), '--r')
+ys = ys/np.max(ys)
+plt.plot(x, ys, '--r')
 
 lmodel = LorentzianModel()
 parsL = lmodel.guess(ys, x=x)

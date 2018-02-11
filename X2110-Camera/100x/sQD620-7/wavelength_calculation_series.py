@@ -290,7 +290,7 @@ for k in range(len(im_red)):
  
             
         wavelengthTable.append(list(pixel_disp.T)) 
-        wavelengthTable.append(list(sumRed[:, i*k].T)) 
+        wavelengthTable.append(list(sumRed[:, i+(k*peaks_pf)].T)) 
 
 
 
